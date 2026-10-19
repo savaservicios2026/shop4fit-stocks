@@ -209,6 +209,12 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .checks label{display:flex;gap:8px;align-items:flex-start;padding:6px;border-radius:6px;cursor:pointer}
 .checks label:hover{background:var(--bg)}
 
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:6px;vertical-align:1px}
+nav.tabs button{position:relative}
+nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:var(--bad);color:#fff;font-size:.68rem;font-weight:700;line-height:17px;text-align:center}
+.msgs{display:grid;gap:8px;max-height:46vh;overflow-y:auto}
+.msg{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px}
+.msg .tx{white-space:pre-wrap;overflow-wrap:anywhere}
 #login[hidden]{display:none}
 #video{width:100%;border-radius:var(--r);background:#000;max-height:50vh;object-fit:cover}
 
@@ -228,6 +234,7 @@ svg.chart rect.b.cur{fill:var(--scan)}
   <button id="salir" class="btn small ghost" hidden>Salir</button>
   <nav class="tabs" id="tabs" aria-label="Secciones">
     <button data-v="escanear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>Escanear</button>
+    <button data-v="solicitudes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l3-8h12l3 8v6H3z M3 13h5l1 3h6l1-3h5"/></svg>Solicitudes<span class="badge" id="badgeSol" hidden></span></button>
     <button data-v="stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5M12 13v8"/></svg>Stock</button>
     <button data-v="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z M14 3v5h5M9 12h7M9 16h7"/></svg>Pedidos</button>
     <button data-v="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Análisis</button>
@@ -271,17 +278,21 @@ const MOTIVOS = {
 const MOTIVO_TXT = Object.fromEntries(Object.values(MOTIVOS).flat());
 const DOCS = [["albaran","Albarán"],["presupuesto","Presupuesto"],["factura","Factura"],["proforma","Proforma"]];
 const DOC_TXT = Object.fromEntries(DOCS);
-const COLS = ["productos","movimientos","pedidosProveedor","pedidosCliente"];
+const COLS = ["productos","movimientos","pedidosProveedor","pedidosCliente","solicitudes"];
+const CANALES = {whatsapp:"WhatsApp", correo:"Correo", telefono:"Teléfono", web:"Web", visita:"En persona", otro:"Otro"};
+const ESTADOS_SOL = [["nueva","Nueva"],["curso","En curso"],["presupuestada","Presupuestada"],["aceptada","Aceptada"],["descartada","Descartada"]];
+const ESTADO_SOL_TXT = Object.fromEntries(ESTADOS_SOL);
 const LS_KEY = "control-stock-v1";
 
 /* ============ Estado ============ */
-const S = {productos:new Map(), movimientos:new Map(), pedidosProveedor:new Map(), pedidosCliente:new Map()};
+const S = {productos:new Map(), movimientos:new Map(), pedidosProveedor:new Map(), pedidosCliente:new Map(), solicitudes:new Map()};
+const errCol = {};
 let modo = "cargando", db = null, userCap = null, dl = null, miId = null, cargado = {};
 let vista = "escanear";
 try { const v = localStorage.getItem(LS_KEY+":vista"); if (v) vista = v; } catch(e) {}
 let C = null; // cálculos derivados
 const F = nuevoF(); // formulario de movimiento
-const UI = {cat:"", origen:"", bajo:false, q:"", tipoPed:"proveedor", qPed:"", periodo:"12m", agrupar:"categoria", metrica:"imp", qMov:"", tipoMov:""};
+const UI = {cat:"", origen:"", bajo:false, q:"", tipoPed:"proveedor", qPed:"", periodo:"12m", agrupar:"categoria", metrica:"imp", qMov:"", tipoMov:"", estSol:"atender", canalSol:"", qSol:""};
 let modal = null;
 const nombres = {};
 const enMarco = (()=>{ try { return window.self !== window.top; } catch(e) { return true; } })();
@@ -338,7 +349,7 @@ async function iniciar(){
         const m = new Map();
         snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
         S[col] = m; cargado[col] = true; pintar();
-      }, err => { toast("No se pudo sincronizar ("+err.code+"). Recarga la página.", true); });
+      }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes") toast("No se pudo sincronizar ("+err.code+"). Recarga la página.", true); });
     }
   } else {
     modo = "local";
@@ -375,7 +386,7 @@ function iniciarFirebase(){
     for (const col of COLS) fbSubs.push(fs.collection(col).onSnapshot(snap => {
       const m = new Map(); snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
       S[col] = m; cargado[col] = true; pintar();
-    }, err => toast("No se pudo leer «" + col + "» (" + (err.code||"error") + ").", true)));
+    }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes") toast("No se pudo leer «" + col + "» (" + (err.code||"error") + ").", true); }));
   });
 }
 function persistirLocal(){
@@ -460,7 +471,10 @@ function pintarYa(){
   md.className = "modo " + (modo === "nube" ? "nube" : "");
   md.textContent = modo === "nube" ? "Sincronizado" : modo === "local" ? "Guardado en este dispositivo" : "Cargando…";
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === vista ? "page" : "false"));
+  const nSol = [...S.solicitudes.values()].filter(x => x.sinLeer || (x.estado||"nueva") === "nueva").length, bs = $("#badgeSol");
+  bs.hidden = !nSol; bs.textContent = nSol > 99 ? "99+" : nSol;
   $("#vista").innerHTML = (VISTAS[vista] || VISTAS.escanear)();
+  abrirCompartido();
   if (modal && modal.vivo) pintarModal();
   if (aid) { const e = document.getElementById(aid); if (e && e !== document.activeElement) { e.focus({preventScroll:true}); try { if (s0 !== null) e.setSelectionRange(s0, s1); } catch(x) {} } }
   resolverNombres();
@@ -708,6 +722,151 @@ function filaPedCli(x){
   </button>`;
 }
 
+/* ---------- Solicitudes de presupuesto (WhatsApp, correo, teléfono…) ---------- */
+// Cada solicitud es la conversación con un contacto: mensajes[] + datos de contacto + presupuestos (pedidosCliente) vinculados.
+// Los importadores automáticos (correo y WhatsApp) solo crean solicitudes y añaden mensajes; el estado lo lleva la oficina.
+function normTel(s){
+  let d = String(s||"").replace(/[^\d+]/g,"").replace(/^\+/,"").replace(/^00/,"");
+  if (/^[6789]\d{8}$/.test(d)) d = "34" + d;
+  return d.length >= 9 && d.length <= 15 ? d : "";
+}
+function extraerContacto(texto){
+  const t = String(texto||"");
+  const email = (t.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/) || [""])[0].toLowerCase();
+  let telefono = "";
+  for (const m of t.match(/(?:\+|00)?\d[\d\s.\-()]{7,}\d/g) || []) { const n = normTel(m); if (n) { telefono = n; break; } }
+  const wa = t.match(/^\[[^\]]+\]\s*([^:\n]{2,40}):/m); // «[19/10/26, 20:15] Juan Pérez: …» al compartir mensajes desde WhatsApp
+  return {email, telefono, nombre: wa ? wa[1].trim() : ""};
+}
+const solTitulo = s => s ? (s.nombre || s.empresa || (s.telefono ? "+" + s.telefono : "") || s.email || "Sin nombre") : "Solicitud eliminada";
+const solUltimo = s => (s.mensajes||[]).slice(-1)[0];
+const solPorAtender = s => s.sinLeer || ["nueva","curso"].includes(s.estado || "nueva");
+const pillSol = e => `<span class="pill ${ {nueva:"bad",curso:"warn",presupuestada:"info",aceptada:"ok",descartada:""}[e||"nueva"] }">${ESTADO_SOL_TXT[e||"nueva"]}</span>`;
+const mismoContacto = (a, b) => a.id !== b.id && ((a.telefono && a.telefono === b.telefono) || (a.email && a.email.toLowerCase() === (b.email||"").toLowerCase()));
+async function actualizar(col, id, campos){
+  if (modo === "nube" && window.FIREBASE_CONFIG) { db.collection(col).doc(id).update(campos).catch(errorGuardar); return; }
+  const x = S[col].get(id); if (!x) return;
+  await guardar(col, id, {...x, ...campos});
+}
+async function anadirMensaje(id, msg){
+  const x = S.solicitudes.get(id); if (!x) return;
+  const ultimo = msg.fecha > (x.ultimo||"") ? msg.fecha : x.ultimo;
+  if (modo === "nube" && window.FIREBASE_CONFIG) { db.collection("solicitudes").doc(id).update({mensajes: firebase.firestore.FieldValue.arrayUnion(msg), ultimo}).catch(errorGuardar); return; }
+  await guardar("solicitudes", id, {...x, mensajes:[...(x.mensajes||[]), msg], ultimo});
+}
+
+VISTAS.solicitudes = () => {
+  const todas = [...S.solicitudes.values()];
+  const filtros = {atender:["Por atender", solPorAtender], presupuestada:["Presupuestadas", s => s.estado === "presupuestada"], cerradas:["Cerradas", s => ["aceptada","descartada"].includes(s.estado)], todas:["Todas", () => true]};
+  const q = UI.qSol.trim().toLowerCase();
+  const lista = todas.filter(filtros[UI.estSol]?.[1] || (() => true)).filter(s => !UI.canalSol || s.canal === UI.canalSol)
+    .filter(s => !q || JSON.stringify([s.nombre,s.empresa,s.telefono,s.email,s.asunto,(s.mensajes||[]).map(m => m.texto)]).toLowerCase().includes(q))
+    .sort((a,b) => (b.sinLeer?1:0) - (a.sinLeer?1:0) || (b.ultimo||b.fecha||"").localeCompare(a.ultimo||a.fecha||""));
+  const canales = Object.entries(CANALES).filter(([k]) => todas.some(s => s.canal === k));
+  return `${errCol.solicitudes ? `<div class="notice"><span>La base de datos todavía no admite solicitudes: hay que actualizar las reglas de seguridad de Firebase con el archivo <b>firestore.rules</b> del repositorio.</span></div>` : ""}${cargando()}
+  <section class="panel stack">
+    <div class="head"><h2>Solicitudes de presupuesto</h2><button class="btn primary" data-a="nuevaSol">+ Nueva solicitud</button></div>
+    <p class="cat" style="margin:0">Todo cliente que pida presupuesto por WhatsApp, correo o teléfono queda aquí hasta que se le presupueste. Las del correo y WhatsApp de empresa entran solas; también puedes pegar un mensaje o, en Android, usar «Compartir» desde WhatsApp hacia S4F Stocks.</p>
+    <div class="row">
+      <div class="chips">${Object.entries(filtros).map(([k,[t,f]]) => `<button class="chip" aria-pressed="${UI.estSol===k}" data-a="estSolF" data-t="${k}">${t}<span class="n">${todas.filter(f).length}</span></button>`).join("")}</div>
+      ${canales.length > 1 ? `<select style="flex:0 1 170px" data-ui="canalSol" aria-label="Canal"><option value="">Todos los canales</option>${canales.map(([k,t]) => `<option value="${k}" ${UI.canalSol===k?"selected":""}>${t}</option>`).join("")}</select>` : ""}
+      <input class="grow" id="qSol" type="search" data-ui="qSol" value="${h(UI.qSol)}" placeholder="Nombre, teléfono, correo o texto" aria-label="Buscar solicitud">
+    </div>
+    ${lista.length ? `<div class="list">${lista.map(filaSol).join("")}</div>` : `<div class="empty">${todas.length ? "No hay solicitudes en esta lista." : "Aún no hay solicitudes. Crea la primera o conecta el correo y WhatsApp de empresa."}</div>`}
+  </section>`;
+};
+function filaSol(s){
+  const u = solUltimo(s), pres = (s.pedidosCliente||[]).map(id => S.pedidosCliente.get(id)).filter(Boolean);
+  return `<button class="item" data-a="verSol" data-id="${s.id}">
+    <span class="t">${s.sinLeer ? `<span class="dot" title="Mensaje sin leer"></span>` : ""}${h(solTitulo(s))}${s.empresa && s.nombre ? ` <span class="cat">${h(s.empresa)}</span>` : ""}</span>
+    <span class="r">${pillSol(s.estado)}<div class="cat">${fFecha(s.ultimo||s.fecha)}</div></span>
+    <span class="s">${h(CANALES[s.canal]||"")}${s.asunto ? " · " + h(s.asunto) : ""}${u && u.texto ? " · " + h(u.texto.replace(/\s+/g," ").slice(0,90)) : ""}${pres.length ? " · " + pres.map(p => h(p.presupuesto ? "Presup. " + p.presupuesto : "Pedido")).join(", ") : ""}</span>
+  </button>`;
+}
+function verSolicitud(id){
+  const s0 = S.solicitudes.get(id); if (s0 && s0.sinLeer) actualizar("solicitudes", id, {sinLeer:false});
+  abrirModal({vivo:true, conf:false, M:{nuevoMsg:"", vinc:false, qV:""},
+    titulo:() => h(solTitulo(S.solicitudes.get(id))),
+    sub:() => { const s = S.solicitudes.get(id); return s ? [CANALES[s.canal], s.empresa && s.nombre ? s.empresa : "", "desde " + fFecha(s.fecha)].filter(Boolean).map(h).join(" · ") : ""; },
+    cuerpo:() => {
+      const s = S.solicitudes.get(id); if (!s) return `<div class="empty">Esta solicitud se ha eliminado.</div>`;
+      const M = modal.M, est = s.estado || "nueva";
+      const pres = (s.pedidosCliente||[]).map(p => S.pedidosCliente.get(p)).filter(Boolean);
+      const otras = [...S.solicitudes.values()].filter(o => mismoContacto(o, s));
+      const cands = M.vinc ? [...S.pedidosCliente.values()].filter(c => !(s.pedidosCliente||[]).includes(c.id))
+        .filter(c => !M.qV || JSON.stringify([c.cliente,c.presupuesto,c.albaran]).toLowerCase().includes(M.qV.toLowerCase())).sort((a,b) => (b.fecha||"").localeCompare(a.fecha||"")).slice(0,40) : [];
+      const asunto = encodeURIComponent("Re: " + (s.asunto || "Presupuesto Shop4Fit"));
+      return `<div class="row">
+        ${s.telefono ? `<a class="btn" href="https://wa.me/${h(s.telefono)}" target="_blank" rel="noopener">WhatsApp</a><a class="btn" href="tel:+${h(s.telefono)}">Llamar +${h(s.telefono)}</a>` : ""}
+        ${s.email ? `<a class="btn" href="mailto:${h(s.email)}?subject=${asunto}">Responder a ${h(s.email)}</a>` : ""}
+        ${!s.telefono && !s.email ? `<span class="cat">Sin teléfono ni correo. Edita la solicitud para añadirlos.</span>` : ""}
+      </div>
+      <div><div class="lbl">Estado</div><div class="chips">${ESTADOS_SOL.map(([k,t]) => `<button class="chip" aria-pressed="${est===k}" data-a="estSol" data-id="${id}" data-t="${k}">${t}</button>`).join("")}</div></div>
+      <div><h3 style="margin-bottom:6px">Mensajes</h3><div class="msgs">${(s.mensajes||[]).length ? [...s.mensajes].sort((a,b) => (a.fecha||"").localeCompare(b.fecha||"")).map(m => `<div class="msg"><div class="cat">${h(CANALES[m.canal]||"")} · ${fFecha(m.fecha, true)}${m.de ? " · " + h(m.de) : ""}</div>${m.asunto ? `<b>${h(m.asunto)}</b>` : ""}<div class="tx">${h(m.texto||"")}</div></div>`).join("") : `<p class="cat" style="margin:0">Sin mensajes.</p>`}</div>
+        <div class="row" style="margin-top:8px;align-items:flex-end"><textarea class="grow" id="sMsg" data-m="nuevoMsg" placeholder="Pega aquí otro mensaje del cliente o anota la llamada">${h(M.nuevoMsg)}</textarea><button class="btn" data-a="addMsg" data-id="${id}">Añadir</button></div></div>
+      <div><div class="head"><h3>Presupuestos</h3><div class="row"><button class="btn small" data-a="vincSol">${M.vinc ? "Cerrar" : "Vincular existente"}</button><button class="btn small primary" data-a="presSol" data-id="${id}">+ Crear presupuesto</button></div></div>
+        ${M.vinc ? `<div style="margin-top:8px"><input id="sQV" type="search" data-m="qV" data-rerender value="${h(M.qV)}" placeholder="Busca por cliente, presupuesto o albarán" style="margin-bottom:6px">${cands.length ? `<div class="list">${cands.map(c => `<button class="item" data-a="vincPed" data-id="${id}" data-ped="${c.id}"><span class="t">${h(c.cliente||"Cliente")}</span><span class="r"><span class="btn small">Vincular</span></span><span class="s">${[c.presupuesto && "Presup. " + h(c.presupuesto), c.albaran && "Albarán " + h(c.albaran), fFecha(c.fecha)].filter(Boolean).join(" · ")}</span></button>`).join("")}</div>` : `<p class="cat" style="margin:0">No hay pedidos de cliente${M.qV ? " que coincidan" : ""}.</p>`}</div>` : ""}
+        ${pres.length ? `<div class="list" style="margin-top:6px">${pres.map(p => `<div class="row" style="flex-wrap:nowrap"><div class="grow">${filaPedCli(p)}</div><button class="btn small ghost" data-a="desvincPed" data-id="${id}" data-ped="${p.id}" aria-label="Desvincular">×</button></div>`).join("")}</div>` : `<p class="cat" style="margin:6px 0 0">Todavía no tiene presupuesto. Créalo aquí o vincula uno que ya exista.</p>`}
+      </div>
+      ${otras.length ? `<div><h3 style="margin-bottom:6px">Otras solicitudes de este contacto</h3><div class="list">${otras.map(filaSol).join("")}</div></div>` : ""}
+      ${s.nota ? `<div><div class="lbl">Nota</div>${h(s.nota)}</div>` : ""}`;
+    },
+    pie:() => `<button class="btn danger" data-a="borrarSol" data-id="${id}">${modal.conf ? "Confirmar: eliminar" : "Eliminar"}</button><span style="flex:1"></span><button class="btn" data-a="editarSol" data-id="${id}">Editar datos</button>`
+  });
+}
+function formSolicitud(id, preset){
+  const s0 = id ? S.solicitudes.get(id) : null;
+  const M = Object.assign({canal:"whatsapp", nombre:"", empresa:"", telefono:"", email:"", asunto:"", mensaje:"", nota:""}, s0 ? JSON.parse(JSON.stringify(s0)) : {}, preset||{});
+  M.dup = null;
+  abrirModal({M, form:true,
+    titulo:() => id ? "Editar solicitud" : "Nueva solicitud",
+    cuerpo:() => `${M.dup ? `<div class="notice"><span>Ya hay una solicitud abierta de este contacto: <b>${h(solTitulo(S.solicitudes.get(M.dup)))}</b>. ¿Añado el mensaje a esa conversación?</span><span class="row"><button class="btn small primary" data-a="dupSi">Añadir a esa</button><button class="btn small" data-a="dupNo">Crear otra</button></span></div>` : ""}
+      <div class="fields">
+      ${!id ? `<div class="full"><label class="lbl" for="sMen">Mensaje del cliente</label><textarea id="sMen" data-m="mensaje" style="min-height:110px" ${preset && preset.mensaje ? "" : "autofocus"} placeholder="Pega aquí el WhatsApp o el correo. El teléfono, el correo y el nombre se rellenan solos si aparecen.">${h(M.mensaje)}</textarea></div>` : ""}
+      <div><label class="lbl" for="sCanal">Canal</label><select id="sCanal" data-m="canal">${Object.entries(CANALES).map(([k,t]) => `<option value="${k}" ${M.canal===k?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="sNom">Nombre</label><input id="sNom" type="text" data-m="nombre" value="${h(M.nombre)}" placeholder="Persona de contacto"></div>
+      <div><label class="lbl" for="sEmp">Empresa / gimnasio</label><input id="sEmp" type="text" list="dlC" data-m="empresa" value="${h(M.empresa)}"><datalist id="dlC">${[...new Set([...S.pedidosCliente.values()].map(p => p.cliente).filter(Boolean))].sort().map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
+      <div><label class="lbl" for="sTel">Teléfono</label><input id="sTel" type="text" inputmode="tel" data-m="telefono" value="${h(M.telefono)}" placeholder="600 000 000"></div>
+      <div><label class="lbl" for="sMail">Correo</label><input id="sMail" type="text" inputmode="email" data-m="email" value="${h(M.email)}"></div>
+      <div class="full"><label class="lbl" for="sAs">Qué pide</label><input id="sAs" type="text" data-m="asunto" value="${h(M.asunto)}" placeholder="Presupuesto suelo de caucho 120 m²"></div>
+      <div class="full"><label class="lbl" for="sNota">Nota interna</label><textarea id="sNota" data-m="nota">${h(M.nota)}</textarea></div>
+    </div>`,
+    pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" data-a="guardarSol">${id ? "Guardar cambios" : "Guardar solicitud"}</button>`,
+    guardar: async (dupDecision) => {
+      const ex = extraerContacto(M.mensaje);
+      const datos = {canal:M.canal, nombre:(M.nombre || ex.nombre).trim(), empresa:M.empresa.trim(), telefono:normTel(M.telefono) || (M.telefono.trim() ? M.telefono.replace(/\D/g,"") : ex.telefono), email:(M.email || ex.email).trim().toLowerCase(), asunto:M.asunto.trim(), nota:M.nota};
+      if (!datos.nombre && !datos.empresa && !datos.telefono && !datos.email && !M.mensaje.trim()) { toast("Pega el mensaje o indica al menos un dato del cliente", true); return; }
+      try {
+        if (id) { await actualizar("solicitudes", id, datos); toast("Solicitud actualizada"); verSolicitud(id); return; }
+        const ahora = new Date().toISOString();
+        const msg = M.mensaje.trim() ? {id:nuevoId(), fecha:ahora, canal:datos.canal, de:datos.nombre || "", asunto:datos.asunto, texto:M.mensaje.trim().slice(0,8000)} : null;
+        if (dupDecision === undefined) { const d = [...S.solicitudes.values()].find(o => !["aceptada","descartada"].includes(o.estado) && mismoContacto(o, {...datos, id:""})); if (d && msg) { M.dup = d.id; pintarModal(); return; } }
+        if (dupDecision === true) { await anadirMensaje(M.dup, msg); await actualizar("solicitudes", M.dup, {sinLeer:false}); toast("Mensaje añadido a la solicitud"); verSolicitud(M.dup); return; }
+        const sid = nuevoId();
+        await guardar("solicitudes", sid, {...datos, fecha:ahora, ultimo:ahora, estado:"nueva", sinLeer:false, pedidosCliente:[], mensajes: msg ? [msg] : [], autor:miId||""});
+        toast("Solicitud guardada"); verSolicitud(sid);
+      } catch(e) { errorGuardar(e); }
+    }
+  });
+}
+// Enlace desde «Compartir» en el móvil (share_target del manifest) o ?solicitud=…
+let compartido = null;
+try {
+  const u = new URLSearchParams(location.search);
+  if (u.has("compartir")) {
+    const texto = [u.get("title"), u.get("text"), u.get("url")].filter(Boolean).join("\n").trim();
+    if (texto) compartido = {mensaje:texto, canal: /^\[[^\]]+\]\s*[^:\n]{2,40}:/m.test(texto) || !/@/.test(texto) ? "whatsapp" : "correo"};
+    history.replaceState(null, "", location.pathname);
+  }
+} catch(e) {}
+function abrirCompartido(){
+  if (!compartido || !COLS.every(c => cargado[c]) || modo === "cargando" || !$("#login").hidden) return;
+  const p = compartido; compartido = null; vista = "solicitudes";
+  const ex = extraerContacto(p.mensaje);
+  formSolicitud(null, {...p, nombre:ex.nombre, telefono:ex.telefono, email:ex.email});
+  pintar();
+}
+
 /* ---------- Análisis de ventas ---------- */
 function desdePeriodo(){
   const d = new Date();
@@ -916,17 +1075,18 @@ function verPedido(tipo, id){
       <div><h3 style="margin-bottom:6px">${prov ? "Vinculado a pedidos de cliente" : "Abastecido por pedidos a proveedor"}</h3>
         ${vinc.length ? `<div class="list">${vinc.map(v => prov ? filaPedCli(v) : filaPedProv(v)).join("")}</div>` : `<p class="cat" style="margin:0">${prov ? "Este pedido no está vinculado a ningún presupuesto o albarán de cliente. Edítalo para vincularlo." : "Ningún pedido a proveedor cubre este presupuesto o albarán todavía."}</p>`}
       </div>
+      ${!prov && [...S.solicitudes.values()].some(s => (s.pedidosCliente||[]).includes(id)) ? `<div><h3 style="margin-bottom:6px">Solicitud del cliente</h3><div class="list">${[...S.solicitudes.values()].filter(s => (s.pedidosCliente||[]).includes(id)).map(filaSol).join("")}</div></div>` : ""}
       ${x.nota ? `<div><div class="lbl">Nota</div>${h(x.nota)}</div>` : ""}`;
     },
     pie:() => `<button class="btn danger" data-a="borrarPed" data-tipo="${tipo}" data-id="${id}">${modal.conf ? "Confirmar: eliminar" : "Eliminar"}</button><span style="flex:1"></span><button class="btn" data-a="editarPed" data-tipo="${tipo}" data-id="${id}">Editar</button>`
   });
 }
-function formPedido(tipo, id){
+function formPedido(tipo, id, preset, alGuardar){
   const prov = tipo === "proveedor";
   const x0 = id ? (prov ? S.pedidosProveedor : S.pedidosCliente).get(id) : null;
   const M = Object.assign(prov ? {proveedor:"", origen:"china", numero:"", docRef:"", fecha:hoy(), fechaPrevista:"", clientes:[], nota:"", cancelado:false, lineas:[{productoId:"",cantidad:1,coste:""}]}
                                : {cliente:"", numero:"", presupuesto:"", albaran:"", fecha:hoy(), nota:"", cancelado:false, lineas:[{productoId:"",cantidad:1,precio:""}]},
-                          x0 ? JSON.parse(JSON.stringify(x0)) : {});
+                          x0 ? JSON.parse(JSON.stringify(x0)) : {}, preset||{});
   M.qVinc = "";
   const prods = [...S.productos.values()].sort((a,b) => (a.categoria||"").localeCompare(b.categoria||"") || a.nombre.localeCompare(b.nombre));
   const opciones = sel => `<option value="">Elige producto…</option>` + CATS.map(c => { const ps = prods.filter(p => p.categoria===c.id); return ps.length ? `<optgroup label="${h(c.nombre)}">${ps.map(p => `<option value="${p.id}" ${sel===p.id?"selected":""}>${h(p.nombre)}</option>`).join("")}</optgroup>` : ""; }).join("");
@@ -971,7 +1131,7 @@ function formPedido(tipo, id){
       if (!lineas.length) { toast("Añade al menos una línea con producto y cantidad", true); return; }
       const {qVinc, ...datos} = M; datos.lineas = lineas;
       const pid = id || nuevoId();
-      try { await guardar(prov ? "pedidosProveedor" : "pedidosCliente", pid, datos); toast(id ? "Pedido actualizado" : "Pedido creado"); verPedido(tipo, pid); }
+      try { await guardar(prov ? "pedidosProveedor" : "pedidosCliente", pid, datos); toast(id ? "Pedido actualizado" : "Pedido creado"); if (alGuardar) await alGuardar(pid); verPedido(tipo, pid); }
       catch(e) { errorGuardar(e); }
     }
   });
@@ -1188,6 +1348,26 @@ document.addEventListener("click", async e => {
     case "nuevoPed": formPedido(UI.tipoPed); return;
     case "verPedProv": verPedido("proveedor", id); return;
     case "verPedCli": verPedido("cliente", id); return;
+    case "estSolF": UI.estSol = t.dataset.t; pintar(); return;
+    case "nuevaSol": formSolicitud(null); return;
+    case "verSol": verSolicitud(id); return;
+    case "editarSol": formSolicitud(id); return;
+    case "guardarSol": t.disabled = true; await modal.guardar(); t.disabled = false; return;
+    case "dupSi": await modal.guardar(true); return;
+    case "dupNo": await modal.guardar(false); return;
+    case "estSol": await actualizar("solicitudes", id, {estado:t.dataset.t}); return;
+    case "addMsg": { const tx = (modal.M.nuevoMsg||"").trim(); if (!tx) { toast("Escribe o pega el mensaje", true); return; } const s = S.solicitudes.get(id);
+      await anadirMensaje(id, {id:nuevoId(), fecha:new Date().toISOString(), canal:s?.canal||"otro", de:"", asunto:"", texto:tx.slice(0,8000)}); modal.M.nuevoMsg = ""; pintarModal(); return; }
+    case "vincSol": modal.M.vinc = !modal.M.vinc; modal.M.qV = ""; pintarModal(); return;
+    case "vincPed": case "desvincPed": { const s = S.solicitudes.get(id); if (!s) return; const set = new Set(s.pedidosCliente||[]); a === "vincPed" ? set.add(t.dataset.ped) : set.delete(t.dataset.ped);
+      const campos = {pedidosCliente:[...set]}; if (a === "vincPed" && ["nueva","curso"].includes(s.estado||"nueva")) campos.estado = "presupuestada";
+      await actualizar("solicitudes", id, campos); modal.M.vinc = false; pintarModal(); return; }
+    case "presSol": { const s = S.solicitudes.get(id); if (!s) return;
+      formPedido("cliente", null, {cliente: s.empresa || s.nombre || "", nota: [s.asunto, s.telefono && "Tel. +" + s.telefono, s.email].filter(Boolean).join(" · ")},
+        async pid => { const x = S.solicitudes.get(id); if (!x) return; const c = {pedidosCliente:[...new Set([...(x.pedidosCliente||[]), pid])]}; if (["nueva","curso"].includes(x.estado||"nueva")) c.estado = "presupuestada"; await actualizar("solicitudes", id, c); }); return; }
+    case "borrarSol":
+      if (!modal.conf) { modal.conf = true; pintarModal(); return; }
+      try { await borrar("solicitudes", id); toast("Solicitud eliminada"); cerrarModal(); } catch(x) { errorGuardar(x); } return;
     case "editarPed": formPedido(t.dataset.tipo, id); return;
     case "borrarPed":
       if (!modal.conf) { modal.conf = true; pintarModal(); return; }

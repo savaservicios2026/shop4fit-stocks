@@ -1,0 +1,39 @@
+# Entrada automática de solicitudes
+
+Las solicitudes de presupuesto llegan a la pestaña **Solicitudes** de la app. Cada contacto (un correo o un número de WhatsApp) es una solicitud, y sus mensajes nuevos se van añadiendo y la marcan como *sin leer*.
+
+Todo funciona con el plan gratuito de Firebase (Spark): no hacen falta Cloud Functions.
+
+## 0. Una vez: usuario importador y reglas
+
+1. Firebase → **Authentication** → *Usuarios* → *Añadir usuario*: correo `importador@shop4fit-stocks.firebaseapp.com` y una contraseña larga. Esa contraseña es `IMPORTADOR_CLAVE`.
+2. Firebase → **Firestore Database** → *Reglas*: pega el contenido de [`firestore.rules`](../firestore.rules) y pulsa *Publicar*.
+   El importador solo puede crear solicitudes y añadirles mensajes; no ve el stock ni puede borrar nada.
+
+## 1. Correo de empresa (cada 10 minutos, GitHub Actions)
+
+`correo.py` lee el buzón por IMAP sin marcar nada como leído y crea o amplía la solicitud del remitente. Ignora boletines, avisos automáticos y `no-reply`.
+
+En GitHub → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*:
+
+| Secreto | Valor |
+|---|---|
+| `IMAP_SERVIDOR` | Gmail / Google Workspace: `imap.gmail.com`. Otros: el servidor IMAP del proveedor |
+| `IMAP_USUARIO` | la dirección del buzón, p. ej. `info@…` |
+| `IMAP_CLAVE` | Gmail: una *contraseña de aplicación* (Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones). Otros: la contraseña del buzón |
+| `IMPORTADOR_CLAVE` | la contraseña del paso 0 |
+| `IMAP_CARPETA` | opcional; por defecto `INBOX` |
+
+Después: *Actions* → *Importar correos a Solicitudes* → *Run workflow* para probarlo. La primera vez importa los correos de los últimos 3 días.
+
+## 2. WhatsApp de empresa
+
+**Ya disponible, sin configurar nada:** en Android, con la app instalada, mantén pulsado un mensaje en WhatsApp → *Compartir* → *S4F Stocks*: se abre la solicitud con el texto, el nombre y el teléfono. En iPhone, copia el mensaje y pégalo en *+ Nueva solicitud*.
+
+**Automático (API de WhatsApp Business de Meta):** `whatsapp-worker.js` recibe los mensajes y los guarda. Se aloja gratis en Cloudflare Workers.
+
+1. Cloudflare (cuenta gratuita) → *Workers & Pages* → *Create* → *Hello World* → *Edit code*: pega `whatsapp-worker.js` y despliega. Anota la URL `https://….workers.dev`.
+2. En el Worker → *Settings* → *Variables and Secrets*: `VERIFY_TOKEN` (un texto que inventes), `APP_SECRET` (Meta → tu app → *Configuración básica* → *Clave secreta de la app*) e `IMPORTADOR_CLAVE`.
+3. Meta for Developers → tu app → *WhatsApp* → *Configuración* → *Webhook*: URL del Worker y el mismo `VERIFY_TOKEN`; suscribe el campo `messages`.
+
+Recibir mensajes de clientes en la API es gratis. Con la *coexistencia* de Meta el número sigue funcionando a la vez en la app WhatsApp Business del móvil (hay que abrir esa app al menos una vez cada 13 días).
