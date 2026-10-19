@@ -1,0 +1,1249 @@
+<title>Shop4Fit Stocks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: barra superior + navegación por pestañas (abajo en móvil); cada vista es una hoja de trabajo de nave, densa y escaneable. */
+:root{
+  --bg:#edf0f3; --surface:#ffffff; --surface-2:#e2e7ec; --line:#cdd5de;
+  --fg:#15202b; --muted:#566475; --accent:#2f5fc4; --accent-fg:#ffffff; --brand:#5680de; --brand-fg:#2f5fc4;
+  --scan:#f2c230; --scan-fg:#1b1500;
+  --ok:#1d7a46; --ok-bg:#dcefe3; --warn:#9a5c00; --warn-bg:#f8ead2; --bad:#b8322a; --bad-bg:#f6dedb;
+  --shadow:0 1px 2px rgba(20,32,43,.06),0 4px 14px rgba(20,32,43,.06);
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151b; --surface:#17202a; --surface-2:#212c37; --line:#2d3a47;
+  --fg:#e5ecf2; --muted:#93a3b4; --accent:#86a8f0; --accent-fg:#0b1630; --brand:#5680de; --brand-fg:#86a8f0;
+  --scan:#f2c230; --scan-fg:#1b1500;
+  --ok:#55c98a; --ok-bg:#16301f; --warn:#eaa94a; --warn-bg:#352611; --bad:#f0776b; --bad-bg:#3a1a17;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#17202a; --surface-2:#212c37; --line:#2d3a47;
+  --fg:#e5ecf2; --muted:#93a3b4; --accent:#86a8f0; --accent-fg:#0b1630; --brand:#5680de; --brand-fg:#86a8f0;
+  --scan:#f2c230; --scan-fg:#1b1500;
+  --ok:#55c98a; --ok-bg:#16301f; --warn:#eaa94a; --warn-bg:#352611; --bad:#f0776b; --bad-bg:#3a1a17;
+  --shadow:0 1px 2px rgba(0,0,0,.3);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 96px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;line-height:1.1;margin:0;text-wrap:balance}
+h2{font-size:1.55rem}
+h3{font-size:1.2rem}
+.wrap{max-width:1180px;margin:0 auto}
+.muted{color:var(--muted)}
+.mono{font-family:var(--f-mono);font-size:.88em;letter-spacing:.02em}
+.num{font-variant-numeric:tabular-nums}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Cabecera */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:12px 10px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--brand);display:grid;place-items:center;flex:none}
+.logo img{width:26px;height:auto}
+.brand h1 span{color:var(--brand-fg)}
+.brand h1{font-size:1.7rem;text-transform:uppercase;letter-spacing:.04em}
+.brand .tag{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.modo{font-size:.75rem;padding:3px 9px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.modo.nube{background:var(--ok-bg);color:var(--ok)}
+nav.tabs{display:flex;gap:4px}
+nav.tabs button{background:none;border:0;padding:8px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:6px}
+nav.tabs button svg{width:18px;height:18px}
+nav.tabs button[aria-current="page"]{background:var(--surface);color:var(--fg);box-shadow:var(--shadow)}
+nav.tabs button:hover{color:var(--fg)}
+@media (max-width:760px){
+  nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);justify-content:space-around;padding:6px max(8px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+  nav.tabs button{flex-direction:column;gap:2px;font-size:.7rem;padding:6px 4px;flex:1}
+  nav.tabs button[aria-current="page"]{box-shadow:none;background:var(--surface-2)}
+  .brand h1{font-size:1.4rem}
+}
+
+main{padding-top:18px;display:grid;gap:18px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.stack{display:grid;gap:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>.grow{flex:1 1 180px;min-width:0}
+.head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:8px;cursor:pointer;font-weight:500;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.small{padding:5px 10px;font-size:.85rem}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn svg{width:18px;height:18px}
+.scanBtn{background:var(--scan);color:var(--scan-fg);border-color:var(--scan);font-family:var(--f-display);font-size:1.3rem;text-transform:uppercase;letter-spacing:.05em;padding:16px 22px;flex:1 1 220px}
+.scanBtn svg{width:26px;height:26px}
+.scanBtn:hover{border-color:var(--scan-fg)}
+
+label.lbl,.lbl{display:block;font-size:.74rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px;font-weight:600}
+input[type=text],input[type=number],input[type=date],input[type=search],select,textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-width:0}
+textarea{min-height:64px;resize:vertical}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.fields .full{grid-column:1/-1}
+
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
+.seg button{flex:1;border:0;background:none;padding:10px 6px;cursor:pointer;font-weight:600;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"].entrada{background:var(--ok-bg);color:var(--ok)}
+.seg button[aria-pressed="true"].salida{background:var(--bad-bg);color:var(--bad)}
+.seg button[aria-pressed="true"].ajuste{background:var(--warn-bg);color:var(--warn)}
+.seg button[aria-pressed="true"].neutral{background:var(--surface);color:var(--fg)}
+
+.qty{display:flex;align-items:stretch}
+.qty button{width:46px;border:1px solid var(--line);background:var(--surface-2);cursor:pointer;font-size:1.3rem}
+.qty button:first-child{border-radius:8px 0 0 8px}
+.qty button:last-child{border-radius:0 8px 8px 0}
+.qty input{border-radius:0;text-align:center;font-size:1.25rem;font-weight:600;font-variant-numeric:tabular-nums;border-left:0;border-right:0}
+
+.prod{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.prod .nm{font-weight:600;font-size:1.08rem}
+.stockBig{grid-row:span 3;text-align:right}
+.stockBig b{display:block;font-family:var(--f-display);font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums}
+.stockBig small{color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.06em}
+.lowc{color:var(--bad)}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}
+.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.pill.info{background:var(--surface-2);color:var(--accent)}
+.cat{font-size:.8rem;color:var(--muted)}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;cursor:pointer;font-size:.85rem;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip .n{opacity:.65;margin-left:4px;font-variant-numeric:tabular-nums}
+
+.list{display:grid}
+.item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:11px 4px;border-top:1px solid var(--line);align-items:center;cursor:pointer;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;width:100%}
+.item:first-child{border-top:0}
+.item:hover{background:var(--bg)}
+.item .t{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.item .s{font-size:.82rem;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.item .r{text-align:right;grid-row:span 2;font-variant-numeric:tabular-nums}
+.item .r b{font-size:1.15rem}
+.item.static{cursor:default}
+.item.static:hover{background:none}
+
+.mov{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:2px 12px;padding:9px 2px;border-top:1px solid var(--line);align-items:center}
+.mov:first-child{border-top:0}
+.mov .sg{font-family:var(--f-display);font-size:1.25rem;font-weight:700;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
+.mov .sg.in{color:var(--ok)} .mov .sg.out{color:var(--bad)} .mov .sg.adj{color:var(--warn)}
+.mov .d{font-size:.8rem;color:var(--muted);text-align:right;white-space:nowrap}
+
+.tableWrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.bar.ok i{background:var(--ok)}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.kpi .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.kpi .v{font-family:var(--f-display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px}
+
+.hbars{display:grid;gap:10px}
+.hb{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px}
+.hb .lb{font-size:.9rem;min-width:0;overflow-wrap:anywhere}
+.hb .vl{font-size:.9rem;font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
+.hb .bar{grid-column:1/-1;height:12px}
+.hb .bar i{background:var(--c,var(--accent))}
+
+.empty{padding:22px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.notice{padding:10px 14px;border-radius:var(--r);background:var(--warn-bg);color:var(--warn);display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.notice.info{background:var(--surface-2);color:var(--fg)}
+
+.label{background:#fff;color:#111;border-radius:8px;padding:12px;display:grid;justify-items:center;gap:4px;border:1px solid var(--line)}
+.label svg{max-width:100%;height:auto}
+.label .ln{font-family:var(--f-body);font-weight:600;font-size:.85rem;text-align:center}
+
+/* Modal */
+.ov{position:fixed;inset:0;z-index:40;background:rgba(10,16,22,.5);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:calc(24px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.md{background:var(--surface);border-radius:14px;width:100%;max-width:720px;box-shadow:0 20px 60px rgba(0,0,0,.3);border:1px solid var(--line)}
+.md>header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 18px;border-bottom:1px solid var(--line)}
+.md>.bd{padding:18px;display:grid;gap:16px}
+.md>footer{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.x{background:none;border:0;font-size:1.6rem;line-height:1;cursor:pointer;color:var(--muted);padding:0 4px}
+.lineas{display:grid;gap:8px}
+.linea{display:grid;grid-template-columns:minmax(0,1fr) 90px 110px auto;gap:6px;align-items:center}
+@media (max-width:560px){.linea{grid-template-columns:minmax(0,1fr) 80px auto}.linea .pr{grid-column:1/3}}
+.checks{display:grid;gap:4px;max-height:220px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:6px}
+.checks label{display:flex;gap:8px;align-items:flex-start;padding:6px;border-radius:6px;cursor:pointer}
+.checks label:hover{background:var(--bg)}
+
+#login[hidden]{display:none}
+#video{width:100%;border-radius:var(--r);background:#000;max-height:50vh;object-fit:cover}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);font-weight:500;max-width:calc(100% - 32px)}
+.toast.err{background:var(--bad);color:#fff}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:.4}}}
+
+svg.chart text{fill:var(--muted);font-family:var(--f-body);font-size:11px}
+svg.chart .grid{stroke:var(--line)}
+svg.chart rect.b{fill:var(--accent)}
+svg.chart rect.b.cur{fill:var(--scan)}
+</style>
+
+<header class="top wrap">
+  <div class="brand"><span class="logo" aria-hidden="true"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAAAyCAYAAAD/VJ3gAAAFaklEQVR42t2by48UVRTGf6e7BhURN4gaggZMQAEjioHMjPGFbkxcqImauHDlzqgbFsYNRmKM0b/AxI0J8bFRFy5UiArIQ+MjakAMQZRIJCQ+Io+Z6a7PRZ8Ll5pquqeqtbvqJpWerq6+dfur73zncc8YAxqSGoCZWTs6twYYBzYAq4CrgfmAGO0hoAH8kgwInGYARtK1wKPAA8Ba4CKqO3YkZVljZqmZtSUtBzYBjwGXRZel/kTMjyqMFGgCH1pZ1rhpbQKeBS73j1tO0SqBkh0zwLqkJDjLgNeBOyNgmkBSYbNK/eEeBn5MCoCTmFlL0iTwjgtvHYDJAvSVmU0nBcHZCLzvHqlVE2CyYxeO1FzMqiVpPfCeg9OuIThNf91LvwLqQizgKuALYImD06wZOMG8fgeuM7OTjT7AiT3RGw5Oq4bgEAWwX5vZSUnNfsyj4R7raWDjADSnPcKRdMvXtsvfW9KHaaWSlgIvRAFUmaczyswLeOwOa+7FBDOzVNLzHh0XZY8iM93rOnbaz40Sm8wDxC8jTerOHkkmaaWkaUltSanmPlI//pL0cNVEKemDPc8AYwXZoygXe9DMtklqViD9aJuZenkuJC2S9EfEgrmOlr9u8fnm1cPXqaNNkp7I/NC5jLa/HpO0MJhsXUwsiNMjJUQ0BF1bgX+CmUrFposLcRdgfaMsN8ws7SdqRtISSScjoS0izi1JK6psTXkMavjTvyPKt+YauwS3/jewVtINZUUT+MjMpvKYY2aSdAWwwq8tasoznsWn/ejPa86EGQ1//BYEPqtj0XpfHsB9vslqZR6DQpVwfcSosk+/TOifAB+b2XRc+87Ry3FnbhHGh9xyu4c2iZ87H6BQY5Z0DbAyii4HUT4omp40gT15a3HzSiUtAm70z4vEWQ0/duZ9kPf+Vjq7EW2GG9QFcPdl8rnsem+iUw9PC6w3PIQzngKdl2J0M5/buizo/67NGHAM2N8lNwpgTPTMnXon0fuBo4GV3QBqR/bMkNmTrc00csL/8EMmS6w3zLHb52/mmljkLq8EVg9IoAcB0Od5a4n0ZwFwcwmAwnc+6yZO2b9vARYUtOdBjrCePT30Zw2wmHPbxUX0ZzrSubRboBjA2OAuruXpwbDYY8CfwLfd9MfjlfFIHpKC9zkIHMnqTxag1G94v58fhd2KQ2Z2IoQfOXmTJE2UdAQNYF82/pkFkF/QAF4ELh2yBwvUP3iBxDSVdEnkwRol9OcT6jSi9OLxEuWYkICf9pr72UQ9D8H45qNU8UuzphWVNeYB3wPLCgp027/zqZnd1cWMZ+tMr7rLkJljQGJmM5JeAZZTfAMzCPRbmSpGZc2q6exG0pMlKw3xRsLivCrBLAb5BaO4ZyUza0cdbM8BWyi39R1CgrfN7HiXKkGl2DMm6V5J26N6d1qCPW1n3+pu4nyWQVGKsRB4yoPDYW/mhQ3Fi4GlwLqo/FK2aSKwZ6uZ/dCLPRZ1i90NbBtlIlFu6zueY8rzzSP4/l9XBkUufTxKMUat5ycUtMpqZGDPZjP7uR/tSSJzmowAq2NrS3jwO4BX3SOm/dg6kuYDh+g0SKVDLnP8FyPo1nE61dKjvUwrWzJY5eCoxuCcAR4ys1/p9Dyl/dp2KHGEyeoIzpSDs9MbUfv+nQGgiZoBI85t5ZwA7jOzD0KX7py8g6QxjzOogXkFYMwFeQ8waWbbi4ATAFnpSR9U998G0gwwp4DNwO1mdjC0MBeZOPH4ZyxK/1URpsQ9jyFOmgLeBF4yswMhjSiTZyXAPdGNqjIsI8TfAe96+vBTVNdK+/VWFwLoejpdGGlFTOwUnUbvA3QaQnfQ2TtLI2A0qOz8XwWpOOEKesU+AAAAAElFTkSuQmCC" alt=""></span><h1>Shop4Fit <span>Stocks</span></h1></div>
+  <span id="modo" class="modo">Cargando…</span>
+  <button id="salir" class="btn small ghost" hidden>Salir</button>
+  <nav class="tabs" id="tabs" aria-label="Secciones">
+    <button data-v="escanear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>Escanear</button>
+    <button data-v="stock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v8l-9 5-9-5z M3 8l9 5 9-5M12 13v8"/></svg>Stock</button>
+    <button data-v="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h9l4 4v14H6z M14 3v5h5M9 12h7M9 16h7"/></svg>Pedidos</button>
+    <button data-v="analisis"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Análisis</button>
+    <button data-v="movimientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>Movimientos</button>
+  </nav>
+</header>
+<main class="wrap" id="vista"></main>
+<div id="modal"></div>
+<form id="login" class="ov" style="background:var(--bg)" hidden><div class="md" style="max-width:380px;margin-top:10vh">
+  <div class="bd">
+    <div class="brand" style="margin:0"><span class="logo" aria-hidden="true"></span><h2>Shop4Fit <span style="color:var(--brand-fg)">Stocks</span></h2></div>
+    <div><label class="lbl" for="loginEmail">Correo</label><input id="loginEmail" type="text" inputmode="email" autocomplete="username" required></div>
+    <div><label class="lbl" for="loginPass">Contraseña</label><input id="loginPass" type="password" autocomplete="current-password" required style="width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 11px"></div>
+    <div id="loginErr" class="lowc" role="alert"></div>
+    <button class="btn primary" type="submit">Entrar</button>
+  </div></div></form>
+<div id="toast" aria-live="polite"></div>
+
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+"use strict";
+/* ============ Constantes ============ */
+const CATS = [
+  {id:"musculacion", nombre:"Máquinas de musculación", subs:["Placas","Palanca"], c:"#3b7dd8"},
+  {id:"cardio", nombre:"Máquinas cardiovasculares", subs:[], c:"#d8613b"},
+  {id:"funcional", nombre:"Material funcional de salas colectivas", subs:[], c:"#2a9d78"},
+  {id:"peso-libre", nombre:"Peso libre", subs:[], c:"#8a5cc9"},
+  {id:"suelos", nombre:"Suelos técnicos", subs:["Loseta","Césped","Carriles de césped","Tatami"], c:"#c99a1c"},
+  {id:"estructuras", nombre:"Estructuras", subs:[], c:"#6b7d8f"},
+];
+const CAT = Object.fromEntries(CATS.map(c=>[c.id,c]));
+const ORIGEN = {china:"Importación China", proveedor:"Proveedor nacional"};
+const UNIDADES = ["ud","m²","m","rollo","kg","juego","par"];
+const MOTIVOS = {
+  entrada:[["compra","Compra a proveedor"],["devolucion-cliente","Devolución de cliente"],["otra-entrada","Otra entrada"]],
+  salida:[["venta","Venta a cliente"],["devolucion-proveedor","Devolución a proveedor"],["merma","Rotura o merma"],["uso-interno","Uso interno / exposición"]],
+  ajuste:[["inventario","Recuento de inventario"]],
+};
+const MOTIVO_TXT = Object.fromEntries(Object.values(MOTIVOS).flat());
+const DOCS = [["albaran","Albarán"],["presupuesto","Presupuesto"],["factura","Factura"],["proforma","Proforma"]];
+const DOC_TXT = Object.fromEntries(DOCS);
+const COLS = ["productos","movimientos","pedidosProveedor","pedidosCliente"];
+const LS_KEY = "control-stock-v1";
+
+/* ============ Estado ============ */
+const S = {productos:new Map(), movimientos:new Map(), pedidosProveedor:new Map(), pedidosCliente:new Map()};
+let modo = "cargando", db = null, userCap = null, dl = null, miId = null, cargado = {};
+let vista = "escanear";
+try { const v = localStorage.getItem(LS_KEY+":vista"); if (v) vista = v; } catch(e) {}
+let C = null; // cálculos derivados
+const F = nuevoF(); // formulario de movimiento
+const UI = {cat:"", origen:"", bajo:false, q:"", tipoPed:"proveedor", qPed:"", periodo:"12m", agrupar:"categoria", metrica:"imp", qMov:"", tipoMov:""};
+let modal = null;
+const nombres = {};
+const enMarco = (()=>{ try { return window.self !== window.top; } catch(e) { return true; } })();
+
+function nuevoF(){ return {pid:null, tipo:"entrada", motivo:"compra", cantidad:1, contado:"", pedido:"", docTipo:"albaran", docNum:"", precio:"", nota:"", busqueda:"", resultados:null, noEncontrado:null}; }
+
+/* ============ Utilidades ============ */
+const $ = s => document.querySelector(s);
+const h = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nf = new Intl.NumberFormat("es-ES",{maximumFractionDigits:2});
+const ef = new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const ef2 = new Intl.NumberFormat("es-ES",{style:"currency",currency:"EUR"});
+const fN = n => nf.format(n||0);
+const fE = n => ef.format(n||0);
+const fE2 = n => ef2.format(n||0);
+const num = v => { const n = parseFloat(String(v).replace(",",".")); return isFinite(n) ? n : 0; };
+const nuevoId = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,8);
+const hoy = () => new Date().toISOString().slice(0,10);
+function fFecha(iso, conHora){
+  if (!iso) return "";
+  const d = new Date(iso);
+  const o = {day:"2-digit", month:"short", year: (new Date().getFullYear()===d.getFullYear()?undefined:"2-digit")};
+  if (conHora) { o.hour = "2-digit"; o.minute = "2-digit"; }
+  return d.toLocaleString("es-ES", o);
+}
+function toast(msg, err){
+  const t = $("#toast");
+  t.innerHTML = `<div class="toast ${err?"err":""}">${h(msg)}</div>`;
+  clearTimeout(toast._t); toast._t = setTimeout(()=> t.innerHTML = "", err ? 5000 : 2600);
+}
+const catNombre = p => p ? (CAT[p.categoria]?.nombre || "Sin categoría") + (p.sub ? " · " + p.sub : "") : "";
+function eanCheck(d12){ let s=0; for (let i=0;i<12;i++) s += (+d12[i]) * (i%2 ? 3 : 1); return (10 - s%10) % 10; }
+// Código interno EAN-13 con prefijo 20 (reservado para uso interno): el siguiente libre de la serie
+function codigoInterno(extra){
+  const usados = [...S.productos.values()].map(p => p.codigo).concat(extra || []).filter(c => /^20\d{11}$/.test(c || "")).map(c => +c.slice(0,12));
+  const base = String(usados.length ? Math.max(...usados) + 1 : 200000000001);
+  return base + eanCheck(base);
+}
+const esEAN13 = c => /^\d{13}$/.test(c) && eanCheck(c.slice(0,12)) === +c[12];
+
+/* ============ Almacenamiento: nube (db) o este dispositivo ============ */
+async function iniciar(){
+  pintar();
+  if (window.FIREBASE_CONFIG && window.firebase) return iniciarFirebase();
+  const c = window.claude;
+  if (c && typeof c.use === "function") {
+    try { [db, userCap, dl] = await Promise.all([c.use("db"), c.use("user"), c.use("downloads")]); } catch(e) { db = null; }
+  }
+  if (db) {
+    modo = "nube";
+    try { miId = userCap ? await userCap.id() : null; } catch(e) {}
+    for (const col of COLS) {
+      db.collection(col).onSnapshot(snap => {
+        const m = new Map();
+        snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
+        S[col] = m; cargado[col] = true; pintar();
+      }, err => { toast("No se pudo sincronizar ("+err.code+"). Recarga la página.", true); });
+    }
+  } else {
+    modo = "local";
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+      for (const col of COLS) S[col] = new Map(Object.entries(raw[col] || {}).map(([k,v]) => [k, {...v, id:k}]));
+    } catch(e) {}
+    COLS.forEach(c => cargado[c] = true);
+    pintar();
+  }
+}
+/* Versión alojada (Shop4Fit Stocks en GitHub Pages): Firebase Auth + Firestore con un único acceso de oficina */
+let fbSubs = [];
+function iniciarFirebase(){
+  firebase.initializeApp(window.FIREBASE_CONFIG);
+  const auth = firebase.auth(), fs = firebase.firestore();
+  fs.enablePersistence({synchronizeTabs:true}).catch(() => {});
+  db = {collection: c => fs.collection(c)};
+  modo = "nube"; pintar();
+  const login = $("#login"), salir = $("#salir");
+  login.querySelector(".logo").innerHTML = document.querySelector(".top .logo").innerHTML;
+  login.addEventListener("submit", async e => {
+    e.preventDefault();
+    const err = $("#loginErr"), b = login.querySelector("button"); err.textContent = ""; b.disabled = true;
+    try { await auth.signInWithEmailAndPassword($("#loginEmail").value.trim(), $("#loginPass").value); }
+    catch(x) { err.textContent = /wrong-password|invalid-credential|user-not-found|invalid-email|invalid-login/.test(x.code||"") ? "Correo o contraseña incorrectos." : x.code === "auth/too-many-requests" ? "Demasiados intentos. Espera unos minutos." : "No se pudo entrar. Comprueba la conexión."; }
+    b.disabled = false;
+  });
+  salir.addEventListener("click", () => auth.signOut());
+  auth.onAuthStateChanged(u => {
+    fbSubs.forEach(f => f()); fbSubs = [];
+    if (!u) { COLS.forEach(c => { S[c] = new Map(); cargado[c] = false; }); login.hidden = false; salir.hidden = true; pintar(); setTimeout(() => $("#loginEmail")?.focus(), 50); return; }
+    login.hidden = true; salir.hidden = false; miId = u.email || u.uid;
+    for (const col of COLS) fbSubs.push(fs.collection(col).onSnapshot(snap => {
+      const m = new Map(); snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
+      S[col] = m; cargado[col] = true; pintar();
+    }, err => toast("No se pudo leer «" + col + "» (" + (err.code||"error") + ").", true)));
+  });
+}
+function persistirLocal(){
+  try {
+    const o = {}; for (const col of COLS) o[col] = Object.fromEntries([...S[col]].map(([k,v]) => { const {id, ...r} = v; return [k, r]; }));
+    localStorage.setItem(LS_KEY, JSON.stringify(o));
+  } catch(e) { toast("No se pudo guardar en este dispositivo", true); }
+}
+async function guardar(col, id, data){
+  const limpio = JSON.parse(JSON.stringify(data)); delete limpio.id;
+  if (modo === "nube" && window.FIREBASE_CONFIG) { db.collection(col).doc(id).set(limpio).catch(errorGuardar); return; } // sin esperar al servidor: funciona sin cobertura
+  if (modo === "nube") {
+    try { await db.collection(col).doc(id).set(limpio); }
+    catch(e) {
+      if (e && e.code === "unavailable") { await new Promise(r => setTimeout(r, 400 + Math.random()*600)); return db.collection(col).doc(id).set(limpio); }
+      throw e;
+    }
+  } else { S[col].set(id, {...limpio, id}); persistirLocal(); pintar(); }
+}
+async function borrar(col, id){
+  if (modo === "nube" && window.FIREBASE_CONFIG) { db.collection(col).doc(id).delete().catch(errorGuardar); return; }
+  if (modo === "nube") await db.collection(col).doc(id).delete();
+  else { S[col].delete(id); persistirLocal(); pintar(); }
+}
+function errorGuardar(e){
+  const c = e && e.code;
+  if (c === "invalid_argument" || c === "permission-denied") toast("No tienes permiso para modificar datos en esta página.", true);
+  else if (c === "quota_exceeded") toast("La base de datos está llena. Exporta y archiva movimientos antiguos.", true);
+  else toast("No se pudo guardar. Comprueba la conexión e inténtalo de nuevo.", true);
+}
+
+/* ============ Cálculos derivados (stock = suma de movimientos) ============ */
+function calcular(){
+  const stock = new Map(), recibido = new Map(), servido = new Map(), ultimo = new Map();
+  const movs = [...S.movimientos.values()].sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+  for (const m of movs) {
+    const q = num(m.cantidad);
+    const d = m.tipo === "entrada" ? q : m.tipo === "salida" ? -q : q;
+    stock.set(m.productoId, (stock.get(m.productoId)||0) + d);
+    if (!ultimo.has(m.productoId)) ultimo.set(m.productoId, m.fecha);
+    if (m.pedidoProveedorId) { const k = m.pedidoProveedorId+"|"+m.productoId; recibido.set(k, (recibido.get(k)||0) + (m.tipo==="entrada"?q:m.tipo==="salida"?-q:0)); }
+    if (m.pedidoClienteId) { const k = m.pedidoClienteId+"|"+m.productoId; servido.set(k, (servido.get(k)||0) + (m.tipo==="salida"?q:m.tipo==="entrada"?-q:0)); }
+  }
+  const estadoProv = new Map(), estadoCli = new Map();
+  const pendienteRecibir = new Map(); // productoId -> unidades en pedidos de proveedor abiertos
+  for (const p of S.pedidosProveedor.values()) {
+    let tot=0, rec=0;
+    for (const l of p.lineas||[]) {
+      const q = num(l.cantidad), r = Math.max(0, recibido.get(p.id+"|"+l.productoId)||0);
+      tot += q; rec += Math.min(q, r);
+      if (!p.cancelado) pendienteRecibir.set(l.productoId, (pendienteRecibir.get(l.productoId)||0) + Math.max(0, q-r));
+    }
+    estadoProv.set(p.id, {tot, rec, est: p.cancelado ? "Cancelado" : tot && rec>=tot ? "Recibido" : rec>0 ? "Parcial" : "Pendiente"});
+  }
+  const reservado = new Map();
+  for (const p of S.pedidosCliente.values()) {
+    let tot=0, ser=0;
+    for (const l of p.lineas||[]) {
+      const q = num(l.cantidad), s = Math.max(0, servido.get(p.id+"|"+l.productoId)||0);
+      tot += q; ser += Math.min(q, s);
+      if (!p.cancelado) reservado.set(l.productoId, (reservado.get(l.productoId)||0) + Math.max(0, q-s));
+    }
+    estadoCli.set(p.id, {tot, ser, est: p.cancelado ? "Cancelado" : tot && ser>=tot ? "Servido" : ser>0 ? "Parcial" : "Pendiente"});
+  }
+  return {stock, recibido, servido, ultimo, movs, estadoProv, estadoCli, pendienteRecibir, reservado};
+}
+const stockDe = id => C.stock.get(id) || 0;
+const esBajo = p => p.stockMin !== undefined && p.stockMin !== "" && stockDe(p.id) <= num(p.stockMin);
+const pillEstado = e => `<span class="pill ${ {Recibido:"ok",Servido:"ok",Parcial:"warn",Pendiente:"info",Cancelado:""}[e] }">${e}</span>`;
+const prodNombre = id => S.productos.get(id)?.nombre || "Producto eliminado";
+function etiquetaCli(p){ if (!p) return "Pedido eliminado"; const r = [p.presupuesto && "Presup. "+p.presupuesto, p.albaran && "Albarán "+p.albaran].filter(Boolean).join(" · "); return (p.cliente||"Cliente") + (r ? " — " + r : p.numero ? " — " + p.numero : ""); }
+function etiquetaProv(p){ return p ? (p.proveedor||"Proveedor") + (p.numero ? " — " + p.numero : "") : "Pedido eliminado"; }
+
+/* ============ Pintado ============ */
+let pendientePintar = false;
+function pintar(){ if (pendientePintar) return; pendientePintar = true; requestAnimationFrame(()=>{ pendientePintar = false; pintarYa(); }); }
+function pintarYa(){
+  const a = document.activeElement, aid = a && a.id; let s0=null, s1=null;
+  try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch(e) {}
+  C = calcular();
+  const md = $("#modo");
+  md.className = "modo " + (modo === "nube" ? "nube" : "");
+  md.textContent = modo === "nube" ? "Sincronizado" : modo === "local" ? "Guardado en este dispositivo" : "Cargando…";
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-current", b.dataset.v === vista ? "page" : "false"));
+  $("#vista").innerHTML = (VISTAS[vista] || VISTAS.escanear)();
+  if (modal && modal.vivo) pintarModal();
+  if (aid) { const e = document.getElementById(aid); if (e && e !== document.activeElement) { e.focus({preventScroll:true}); try { if (s0 !== null) e.setSelectionRange(s0, s1); } catch(x) {} } }
+  resolverNombres();
+}
+async function resolverNombres(){
+  if (!userCap || typeof userCap.profiles !== "function") return;
+  const ids = [...new Set(C.movs.slice(0,200).map(m => m.autor).filter(id => id && !(id in nombres)))];
+  if (!ids.length) return;
+  ids.forEach(id => nombres[id] = "");
+  try { const ps = await userCap.profiles(ids); let nuevo = false; for (const id of ids) { const n = ps[id]?.name || ""; if (n) { nombres[id] = n; nuevo = true; } } if (nuevo) pintar(); } catch(e) {}
+}
+
+const hayEjemplos = () => COLS.some(c => [...S[c].values()].some(d => d.ejemplo));
+function avisoEjemplos(){
+  return hayEjemplos() ? `<div class="notice info"><span>Hay <b>datos de ejemplo</b> para que veas cómo funciona. Bórralos cuando vayas a empezar con los tuyos.</span><button class="btn small" data-a="borrarEjemplos">${UI.confEj ? "Confirmar: borrar ejemplos" : "Borrar ejemplos"}</button></div>` : "";
+}
+function cargando(){ return COLS.every(c => cargado[c]) ? "" : `<div class="empty">Cargando datos…</div>`; }
+
+const VISTAS = {};
+
+/* ---------- Escanear / registrar movimiento ---------- */
+VISTAS.escanear = () => {
+  const p = F.pid ? S.productos.get(F.pid) : null;
+  const bajos = [...S.productos.values()].filter(esBajo).sort((a,b)=>stockDe(a.id)-stockDe(b.id));
+  const pend = [...S.pedidosProveedor.values()].filter(x => ["Pendiente","Parcial"].includes(C.estadoProv.get(x.id)?.est)).sort((a,b)=>(a.fechaPrevista||"9").localeCompare(b.fechaPrevista||"9"));
+  return `${avisoEjemplos()}${cargando()}
+  <div class="grid2">
+    <section class="panel stack" aria-labelledby="tReg">
+      <div><h2 id="tReg">Registrar entrada o salida</h2><p class="muted" style="margin:4px 0 0">Escanea el código de barras del producto. También funciona un lector de códigos USB o Bluetooth: dispara y el producto aparece solo.</p></div>
+      <div class="row">
+        <label class="btn scanBtn" for="fotoScan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>Escanear código</label>
+        <input class="vh" id="fotoScan" type="file" accept="image/*" capture="environment" data-scan="mov">
+        ${!enMarco ? `<button class="btn" data-a="vivo">Cámara en directo</button>` : ""}
+      </div>
+      <div>
+        <label class="lbl" for="busca">Código, referencia o nombre</label>
+        <div class="row"><input class="grow" id="busca" type="search" autocomplete="off" data-f="busqueda" value="${h(F.busqueda)}" placeholder="8412345678901 o «prensa»"><button class="btn" data-a="buscar">Buscar</button></div>
+      </div>
+      ${F.noEncontrado ? `<div class="notice"><span>El código <b class="mono">${h(F.noEncontrado)}</b> no está dado de alta.</span><button class="btn small primary" data-a="nuevoProd" data-codigo="${h(F.noEncontrado)}">Dar de alta producto</button></div>` : ""}
+      ${F.resultados ? (F.resultados.length ? `<div><div class="lbl">Elige el producto</div><div class="list">${F.resultados.map(r => `<button class="item" data-a="elegir" data-id="${r.id}"><span class="t">${h(r.nombre)}</span><span class="r"><b>${fN(stockDe(r.id))}</b> ${h(r.unidad||"ud")}</span><span class="s">${h(catNombre(r))} · <span class="mono">${h(r.codigo||"sin código")}</span></span></button>`).join("")}</div></div>` : `<div class="empty">No hay productos que coincidan con «${h(F.busqueda)}».</div>`) : ""}
+      ${p ? formMovimiento(p) : (!F.resultados && !F.noEncontrado ? `<div class="empty">Escanea o busca un producto para registrar el movimiento.</div>` : "")}
+    </section>
+    <div class="stack">
+      <section class="panel stack">
+        <div class="head"><h3>Stock bajo</h3><span class="pill ${bajos.length?"bad":"ok"}">${bajos.length}</span></div>
+        ${bajos.length ? `<div class="list">${bajos.slice(0,6).map(b => `<button class="item" data-a="verProd" data-id="${b.id}"><span class="t">${h(b.nombre)}</span><span class="r lowc"><b>${fN(stockDe(b.id))}</b> / ${fN(b.stockMin)}</span><span class="s">${h(catNombre(b))}${C.pendienteRecibir.get(b.id) ? ` · <b>${fN(C.pendienteRecibir.get(b.id))}</b> en camino` : ""}</span></button>`).join("")}</div>` : `<p class="muted" style="margin:0">Ningún producto por debajo de su stock mínimo.</p>`}
+      </section>
+      <section class="panel stack">
+        <div class="head"><h3>Pendiente de recibir</h3><span class="pill info">${pend.length}</span></div>
+        ${pend.length ? `<div class="list">${pend.slice(0,5).map(x => { const e = C.estadoProv.get(x.id); return `<button class="item" data-a="verPedProv" data-id="${x.id}"><span class="t">${h(etiquetaProv(x))}</span><span class="r">${pillEstado(e.est)}</span><span class="s">${h(ORIGEN[x.origen]||"")} · ${fN(e.rec)}/${fN(e.tot)} recibidas${x.fechaPrevista ? " · llega " + fFecha(x.fechaPrevista) : ""}</span></button>`; }).join("")}</div>` : `<p class="muted" style="margin:0">No hay pedidos a proveedor abiertos.</p>`}
+      </section>
+      <section class="panel stack">
+        <div class="head"><h3>Últimos movimientos</h3><button class="btn small ghost" data-v="movimientos">Ver todos</button></div>
+        ${C.movs.length ? `<div>${C.movs.slice(0,6).map(filaMov).join("")}</div>` : `<p class="muted" style="margin:0">Aún no hay movimientos.</p>`}
+      </section>
+    </div>
+  </div>`;
+};
+
+function pedidosParaProducto(pid, tipo){
+  if (tipo === "entrada") return [...S.pedidosProveedor.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId === pid) && C.estadoProv.get(x.id)?.est !== "Recibido");
+  if (tipo === "salida") return [...S.pedidosCliente.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId === pid) && C.estadoCli.get(x.id)?.est !== "Servido");
+  return [];
+}
+function formMovimiento(p){
+  const st = stockDe(p.id), u = h(p.unidad||"ud");
+  const peds = pedidosParaProducto(p.id, F.tipo);
+  const motivos = MOTIVOS[F.tipo];
+  const q = num(F.cantidad);
+  let previsto = F.tipo === "entrada" ? st + q : F.tipo === "salida" ? st - q : num(F.contado);
+  const conPedido = F.tipo !== "ajuste";
+  const linea = F.pedido ? pedidoLinea(F.tipo, F.pedido, p.id) : null;
+  return `<div class="stack">
+    <div class="prod">
+      <div class="nm">${h(p.nombre)}</div>
+      <div class="stockBig"><b class="${esBajo(p)?"lowc":""}">${fN(st)}</b><small>${u} en nave</small></div>
+      <div class="cat">${h(catNombre(p))} · ${h(ORIGEN[p.origen]||"")}${p.proveedor ? " · " + h(p.proveedor) : ""}</div>
+      <div class="cat"><span class="mono">${h(p.codigo||"sin código")}</span>${p.ubicacion ? " · Ubicación " + h(p.ubicacion) : ""} · <button class="btn small ghost" style="padding:0 4px" data-a="verProd" data-id="${p.id}">Ficha</button></div>
+    </div>
+    <div class="seg" role="group" aria-label="Tipo de movimiento">
+      ${["entrada","salida","ajuste"].map(t => `<button class="${t}" aria-pressed="${F.tipo===t}" data-a="tipo" data-t="${t}">${{entrada:"Entrada",salida:"Salida",ajuste:"Recuento"}[t]}</button>`).join("")}
+    </div>
+    <div class="fields">
+      ${F.tipo === "ajuste" ? `<div><label class="lbl" for="contado">Stock contado (${u})</label><input id="contado" type="number" inputmode="decimal" data-f="contado" value="${h(F.contado)}" placeholder="${fN(st)}"></div>`
+      : `<div><label class="lbl" for="cantidad">Cantidad (${u})</label><div class="qty"><button data-a="menos" aria-label="Restar uno">−</button><input id="cantidad" type="number" inputmode="decimal" min="0" data-f="cantidad" value="${h(F.cantidad)}"><button data-a="mas" aria-label="Sumar uno">+</button></div></div>
+         <div><label class="lbl" for="motivo">Motivo</label><select id="motivo" data-f="motivo" data-rerender>${motivos.map(([k,t]) => `<option value="${k}" ${F.motivo===k?"selected":""}>${t}</option>`).join("")}</select></div>`}
+      ${conPedido ? `<div class="full"><label class="lbl" for="pedido">${F.tipo==="entrada" ? "Pedido a proveedor" : "Pedido de cliente"}</label>
+        <select id="pedido" data-f="pedido" data-rerender><option value="">Sin vincular a pedido</option>${peds.map(x => `<option value="${x.id}" ${F.pedido===x.id?"selected":""}>${h(F.tipo==="entrada"?etiquetaProv(x):etiquetaCli(x))}</option>`).join("")}</select>
+        ${linea ? `<div class="cat" style="margin-top:4px">En este pedido: ${fN(linea.cantidad)} ${u} pedidas, ${fN(linea.hecho)} ya ${F.tipo==="entrada"?"recibidas":"servidas"}, faltan <b>${fN(Math.max(0, linea.cantidad - linea.hecho))}</b>.</div>` : ""}
+        ${!peds.length ? `<div class="cat" style="margin-top:4px">No hay pedidos ${F.tipo==="entrada"?"a proveedor":"de cliente"} abiertos con este producto.</div>` : ""}</div>
+      <div><label class="lbl" for="docTipo">Documento</label><select id="docTipo" data-f="docTipo">${DOCS.map(([k,t]) => `<option value="${k}" ${F.docTipo===k?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="docNum">Nº documento</label><input id="docNum" type="text" data-f="docNum" value="${h(F.docNum)}" placeholder="A-2026-0145"></div>
+      <div><label class="lbl" for="precio">${F.tipo==="entrada" ? "Coste unitario (€)" : "Precio unitario (€)"}</label><input id="precio" type="number" inputmode="decimal" step="0.01" data-f="precio" value="${h(F.precio)}"></div>` : ""}
+      <div class="full"><label class="lbl" for="nota">Nota</label><input id="nota" type="text" data-f="nota" value="${h(F.nota)}" placeholder="Opcional: transportista, estado de la mercancía…"></div>
+    </div>
+    ${F.tipo==="salida" && previsto < 0 ? `<div class="notice">El stock quedaría en ${fN(previsto)} ${u}. Revisa la cantidad o registra antes la entrada.</div>` : ""}
+    <div class="row" style="justify-content:space-between">
+      <span class="muted">Stock tras el movimiento: <b class="num">${fN(previsto)} ${u}</b></span>
+      <div class="row"><button class="btn" data-a="cancelarMov">Cancelar</button><button class="btn primary" data-a="registrar">${F.tipo==="ajuste" ? "Guardar recuento" : (F.tipo==="entrada"?"Registrar entrada":"Registrar salida") + " · " + fN(q) + " " + u}</button></div>
+    </div>
+  </div>`;
+}
+function pedidoLinea(tipo, pedId, pid){
+  const ped = tipo === "entrada" ? S.pedidosProveedor.get(pedId) : S.pedidosCliente.get(pedId);
+  const l = ped && (ped.lineas||[]).find(x => x.productoId === pid);
+  if (!l) return null;
+  const hecho = (tipo === "entrada" ? C.recibido : C.servido).get(pedId+"|"+pid) || 0;
+  return {cantidad:num(l.cantidad), hecho:Math.max(0,hecho), precio:l.precio ?? l.coste, ped};
+}
+function seleccionarProducto(pid, preset){
+  Object.assign(F, nuevoF(), {pid}, preset||{});
+  const p = S.productos.get(pid);
+  if (!preset || preset.precio === undefined) F.precio = F.tipo === "entrada" ? (p?.coste ?? "") : (p?.pvp ?? "");
+  if (preset && preset.pedido) aplicarPedido();
+  vista = "escanear"; cerrarModal(); pintar();
+  setTimeout(()=>{ const c = document.getElementById("cantidad"); if (c) { c.focus({preventScroll:true}); c.select(); } $("#vista").scrollIntoView({block:"start"}); }, 60);
+}
+function aplicarPedido(){
+  if (!F.pedido || !F.pid) return;
+  const l = pedidoLinea(F.tipo, F.pedido, F.pid); if (!l) return;
+  const falta = Math.max(0, l.cantidad - l.hecho); if (falta) F.cantidad = falta;
+  if (l.precio !== undefined && l.precio !== "") F.precio = l.precio;
+  if (F.tipo === "salida") { F.motivo = "venta"; if (l.ped.albaran) { F.docTipo = "albaran"; F.docNum = l.ped.albaran; } else if (l.ped.presupuesto) { F.docTipo = "presupuesto"; F.docNum = l.ped.presupuesto; } }
+  if (F.tipo === "entrada") { F.motivo = "compra"; if (l.ped.docRef) { F.docTipo = "albaran"; F.docNum = l.ped.docRef; } }
+}
+function buscar(texto){
+  const t = String(texto||"").trim();
+  F.busqueda = t; F.resultados = null; F.noEncontrado = null;
+  if (!t) { pintar(); return; }
+  const prods = [...S.productos.values()];
+  const exacto = prods.find(p => (p.codigo && p.codigo === t) || (p.ref && p.ref.toLowerCase() === t.toLowerCase()));
+  if (exacto) { seleccionarProducto(exacto.id); toast("Producto: " + exacto.nombre); return; }
+  const tl = t.toLowerCase();
+  const res = prods.filter(p => [p.nombre, p.ref, p.codigo, p.proveedor].some(v => v && String(v).toLowerCase().includes(tl)));
+  F.pid = null;
+  if (res.length === 1) { seleccionarProducto(res[0].id); return; }
+  if (!res.length && /^[\w\-.]{4,}$/.test(t) && /\d/.test(t)) F.noEncontrado = t; else F.resultados = res.slice(0,20);
+  pintar();
+}
+async function registrar(){
+  const p = S.productos.get(F.pid); if (!p) return;
+  let cantidad;
+  if (F.tipo === "ajuste") {
+    if (F.contado === "" ) { toast("Escribe el stock contado", true); return; }
+    cantidad = num(F.contado) - stockDe(p.id);
+    if (cantidad === 0) { toast("El recuento coincide con el stock. No hay nada que ajustar."); Object.assign(F, nuevoF()); pintar(); return; }
+  } else {
+    cantidad = num(F.cantidad);
+    if (!(cantidad > 0)) { toast("La cantidad tiene que ser mayor que cero", true); return; }
+  }
+  const m = {fecha:new Date().toISOString(), tipo:F.tipo, motivo:F.tipo==="ajuste"?"inventario":F.motivo, productoId:p.id, cantidad,
+    precio: F.tipo==="ajuste" ? num(p.coste) : num(F.precio), docTipo: F.tipo==="ajuste" ? "" : F.docTipo, docNum: F.tipo==="ajuste" ? "" : F.docNum.trim(),
+    pedidoProveedorId: F.tipo==="entrada" ? F.pedido : "", pedidoClienteId: F.tipo==="salida" ? F.pedido : "", nota:F.nota.trim(), autor: miId || ""};
+  const btn = document.querySelector('[data-a="registrar"]'); if (btn) btn.disabled = true;
+  try {
+    await guardar("movimientos", nuevoId(), m);
+    const u = p.unidad||"ud";
+    toast(F.tipo==="ajuste" ? `Recuento guardado: ${fN(num(F.contado))} ${u}` : `${F.tipo==="entrada"?"Entrada":"Salida"} registrada: ${fN(cantidad)} ${u} de ${p.nombre}`);
+    Object.assign(F, nuevoF()); pintar();
+  } catch(e) { errorGuardar(e); if (btn) btn.disabled = false; }
+}
+
+function filaMov(m){
+  const p = S.productos.get(m.productoId), u = p?.unidad || "ud";
+  const sg = m.tipo === "entrada" ? "+" + fN(m.cantidad) : m.tipo === "salida" ? "−" + fN(m.cantidad) : (m.cantidad>0?"+":"−") + fN(Math.abs(m.cantidad));
+  const ped = m.pedidoProveedorId ? etiquetaProv(S.pedidosProveedor.get(m.pedidoProveedorId)) : m.pedidoClienteId ? etiquetaCli(S.pedidosCliente.get(m.pedidoClienteId)) : "";
+  const quien = m.autor && nombres[m.autor] ? " · " + nombres[m.autor] : "";
+  return `<div class="mov"><span class="sg ${m.tipo==="entrada"?"in":m.tipo==="salida"?"out":"adj"}">${sg}</span>
+    <div style="min-width:0"><div style="font-weight:600;overflow-wrap:anywhere">${h(p?.nombre || "Producto eliminado")} <span class="cat">${h(u)}</span></div>
+    <div class="cat" style="overflow-wrap:anywhere">${h(MOTIVO_TXT[m.motivo]||m.tipo)}${m.docNum ? " · " + h(DOC_TXT[m.docTipo]||"Doc.") + " " + h(m.docNum) : ""}${ped ? " · " + h(ped) : ""}${m.nota ? " · " + h(m.nota) : ""}${h(quien)}</div></div>
+    <span class="d">${fFecha(m.fecha, true)}</span></div>`;
+}
+
+/* ---------- Stock ---------- */
+VISTAS.stock = () => {
+  const prods = [...S.productos.values()];
+  const q = UI.q.trim().toLowerCase();
+  const lista = prods.filter(p => (!UI.cat || p.categoria === UI.cat) && (!UI.origen || p.origen === UI.origen) && (!UI.bajo || esBajo(p)) &&
+    (!q || [p.nombre,p.codigo,p.ref,p.proveedor,p.ubicacion].some(v => v && String(v).toLowerCase().includes(q))))
+    .sort((a,b) => (a.categoria||"").localeCompare(b.categoria||"") || (a.nombre||"").localeCompare(b.nombre||""));
+  const valor = lista.reduce((s,p) => s + Math.max(0,stockDe(p.id))*num(p.coste), 0);
+  const uds = lista.reduce((s,p) => s + Math.max(0, stockDe(p.id)), 0);
+  const cnt = id => prods.filter(p => p.categoria === id).length;
+  return `${avisoEjemplos()}${cargando()}
+  <section class="panel stack">
+    <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
+    <div class="chips" role="group" aria-label="Categoría">
+      <button class="chip" aria-pressed="${!UI.cat}" data-a="cat" data-c="">Todas<span class="n">${prods.length}</span></button>
+      ${CATS.map(c => `<button class="chip" aria-pressed="${UI.cat===c.id}" data-a="cat" data-c="${c.id}">${c.nombre}<span class="n">${cnt(c.id)}</span></button>`).join("")}
+    </div>
+    <div class="row">
+      <input class="grow" id="qStock" type="search" data-ui="q" value="${h(UI.q)}" placeholder="Buscar por nombre, código, proveedor o ubicación" aria-label="Buscar producto">
+      <select id="fOrigen" data-ui="origen" style="width:auto" aria-label="Origen"><option value="">Todos los orígenes</option>${Object.entries(ORIGEN).map(([k,t]) => `<option value="${k}" ${UI.origen===k?"selected":""}>${t}</option>`).join("")}</select>
+      <button class="chip" aria-pressed="${UI.bajo}" data-a="bajo">Solo stock bajo</button>
+    </div>
+    <div class="cat">${lista.length} productos · ${fN(uds)} unidades · valor a coste <b>${fE(valor)}</b></div>
+    ${lista.length ? `<div class="tableWrap"><table>
+      <thead><tr><th>Producto</th><th>Código</th><th>Origen</th><th class="n">Stock</th><th class="n">Mín.</th><th class="n">En camino</th><th class="n">Reservado</th><th class="n">Valor</th></tr></thead>
+      <tbody>${lista.map(p => { const st = stockDe(p.id); return `<tr style="cursor:pointer" data-a="verProd" data-id="${p.id}">
+        <td><div style="font-weight:600">${h(p.nombre)}</div><div class="cat">${h(catNombre(p))}${p.ubicacion ? " · " + h(p.ubicacion) : ""}</div></td>
+        <td class="mono">${h(p.codigo||"—")}</td><td class="cat">${p.origen==="china"?"China":h(p.proveedor||"Nacional")}</td>
+        <td class="n"><b class="${esBajo(p)?"lowc":""}">${fN(st)}</b> <span class="cat">${h(p.unidad||"ud")}</span></td>
+        <td class="n cat">${p.stockMin!==""&&p.stockMin!==undefined?fN(p.stockMin):"—"}</td>
+        <td class="n">${C.pendienteRecibir.get(p.id) ? fN(C.pendienteRecibir.get(p.id)) : "—"}</td>
+        <td class="n">${C.reservado.get(p.id) ? fN(C.reservado.get(p.id)) : "—"}</td>
+        <td class="n">${fE(Math.max(0,st)*num(p.coste))}</td></tr>`; }).join("")}</tbody></table></div>`
+      : `<div class="empty">${prods.length ? "Ningún producto coincide con los filtros." : "Aún no hay productos. Pulsa «+ Producto» o escanea un código para darlo de alta."}</div>`}
+  </section>`;
+};
+
+/* ---------- Pedidos ---------- */
+VISTAS.pedidos = () => {
+  const prov = UI.tipoPed === "proveedor";
+  const q = UI.qPed.trim().toLowerCase();
+  const col = prov ? S.pedidosProveedor : S.pedidosCliente;
+  const lista = [...col.values()].filter(x => !q || JSON.stringify([x.numero,x.proveedor,x.cliente,x.presupuesto,x.albaran,x.docRef]).toLowerCase().includes(q))
+    .sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+  return `${avisoEjemplos()}${cargando()}
+  <section class="panel stack">
+    <div class="head"><h2>Pedidos</h2><button class="btn primary" data-a="nuevoPed">+ ${prov ? "Pedido a proveedor" : "Pedido de cliente"}</button></div>
+    <div class="row">
+      <div class="seg" style="flex:0 1 420px"><button class="neutral" aria-pressed="${prov}" data-a="tipoPed" data-t="proveedor">De proveedores (entran)</button><button class="neutral" aria-pressed="${!prov}" data-a="tipoPed" data-t="cliente">De clientes (salen)</button></div>
+      <input class="grow" id="qPed" type="search" data-ui="qPed" value="${h(UI.qPed)}" placeholder="${prov ? "Proveedor, nº pedido o proforma" : "Cliente, presupuesto o albarán"}" aria-label="Buscar pedido">
+    </div>
+    <p class="cat" style="margin:0">${prov ? "Cada pedido a proveedor se vincula a los presupuestos o albaranes de cliente que cubre." : "Los pedidos de cliente se identifican por su presupuesto y su albarán; desde aquí ves qué pedidos a proveedor los abastecen."}</p>
+    ${lista.length ? `<div class="list">${lista.map(x => prov ? filaPedProv(x) : filaPedCli(x)).join("")}</div>` : `<div class="empty">No hay pedidos ${prov?"a proveedor":"de cliente"}${q?" que coincidan":""}. ${q?"":"Crea el primero con el botón de arriba."}</div>`}
+  </section>`;
+};
+function filaPedProv(x){
+  const e = C.estadoProv.get(x.id) || {tot:0,rec:0,est:"Pendiente"};
+  const vinc = (x.clientes||[]).map(id => S.pedidosCliente.get(id)).filter(Boolean);
+  return `<button class="item" data-a="verPedProv" data-id="${x.id}">
+    <span class="t">${h(x.proveedor||"Proveedor")} <span class="cat mono">${h(x.numero||"")}</span></span>
+    <span class="r">${pillEstado(e.est)}<div class="cat">${fN(e.rec)}/${fN(e.tot)}</div></span>
+    <span class="s">${h(ORIGEN[x.origen]||"")} · ${fFecha(x.fecha)}${x.fechaPrevista ? " · llega " + fFecha(x.fechaPrevista) : ""}${vinc.length ? " · Para: " + vinc.map(v => h(etiquetaCli(v))).join("; ") : ""}</span>
+  </button>`;
+}
+function filaPedCli(x){
+  const e = C.estadoCli.get(x.id) || {tot:0,ser:0,est:"Pendiente"};
+  const prov = [...S.pedidosProveedor.values()].filter(p => (p.clientes||[]).includes(x.id));
+  return `<button class="item" data-a="verPedCli" data-id="${x.id}">
+    <span class="t">${h(x.cliente||"Cliente")}</span>
+    <span class="r">${pillEstado(e.est)}<div class="cat">${fN(e.ser)}/${fN(e.tot)}</div></span>
+    <span class="s">${[x.presupuesto && "Presup. <span class='mono'>"+h(x.presupuesto)+"</span>", x.albaran && "Albarán <span class='mono'>"+h(x.albaran)+"</span>", fFecha(x.fecha)].filter(Boolean).join(" · ")}${prov.length ? " · " + prov.length + " pedido" + (prov.length>1?"s":"") + " a proveedor" : ""}</span>
+  </button>`;
+}
+
+/* ---------- Análisis de ventas ---------- */
+function desdePeriodo(){
+  const d = new Date();
+  if (UI.periodo === "30d") return new Date(d - 30*864e5);
+  if (UI.periodo === "90d") return new Date(d - 90*864e5);
+  if (UI.periodo === "ano") return new Date(d.getFullYear(),0,1);
+  if (UI.periodo === "12m") return new Date(d.getFullYear(), d.getMonth()-11, 1);
+  return new Date(0);
+}
+VISTAS.analisis = () => {
+  const desde = desdePeriodo().toISOString();
+  const ventas = C.movs.filter(m => m.tipo === "salida" && m.motivo === "venta" && (m.fecha||"") >= desde);
+  let uds=0, imp=0, mar=0;
+  const grupos = new Map();
+  for (const m of ventas) {
+    const p = S.productos.get(m.productoId), q = num(m.cantidad), i = q*num(m.precio), mg = i - q*num(p?.coste);
+    uds += q; imp += i; mar += mg;
+    const k = UI.agrupar === "categoria" ? (p?.categoria || "—") : m.productoId;
+    const g = grupos.get(k) || {k, uds:0, imp:0, mar:0, n:0}; g.uds += q; g.imp += i; g.mar += mg; g.n++; grupos.set(k, g);
+  }
+  if (UI.agrupar === "categoria") CATS.forEach(c => { if (!grupos.has(c.id)) grupos.set(c.id, {k:c.id, uds:0, imp:0, mar:0, n:0}); });
+  const met = UI.metrica;
+  const arr = [...grupos.values()].sort((a,b) => b[met]-a[met]);
+  const max = Math.max(1, ...arr.map(g => g[met]));
+  const fmt = v => met === "uds" ? fN(v) + " ud" : fE(v);
+  const etiqueta = g => UI.agrupar === "categoria" ? (CAT[g.k]?.nombre || "Sin categoría") : prodNombre(g.k);
+  const color = g => UI.agrupar === "categoria" ? (CAT[g.k]?.c || "var(--muted)") : (CAT[S.productos.get(g.k)?.categoria]?.c || "var(--accent)");
+  // Stock por categoría
+  const porCat = CATS.map(c => { const ps = [...S.productos.values()].filter(p => p.categoria === c.id); return {c, n:ps.length, uds:ps.reduce((s,p)=>s+Math.max(0,stockDe(p.id)),0), val:ps.reduce((s,p)=>s+Math.max(0,stockDe(p.id))*num(p.coste),0)}; });
+  return `${avisoEjemplos()}${cargando()}
+  <section class="panel stack">
+    <div class="head"><h2>Análisis de ventas</h2>
+      <select id="periodo" data-ui="periodo" style="width:auto" aria-label="Periodo">${[["30d","Últimos 30 días"],["90d","Últimos 90 días"],["ano","Este año"],["12m","Últimos 12 meses"],["todo","Todo"]].map(([k,t]) => `<option value="${k}" ${UI.periodo===k?"selected":""}>${t}</option>`).join("")}</select>
+    </div>
+    <p class="cat" style="margin:0">Cuenta las salidas registradas como «Venta a cliente», al precio indicado en cada salida. El margen usa el coste de la ficha del producto.</p>
+    <div class="kpis">
+      <div class="kpi"><div class="k">Facturación</div><div class="v">${fE(imp)}</div></div>
+      <div class="kpi"><div class="k">Margen estimado</div><div class="v">${fE(mar)}</div><div class="cat">${imp ? fN(mar/imp*100) + " % s/ venta" : "—"}</div></div>
+      <div class="kpi"><div class="k">Unidades vendidas</div><div class="v">${fN(uds)}</div></div>
+      <div class="kpi"><div class="k">Líneas de venta</div><div class="v">${fN(ventas.length)}</div></div>
+    </div>
+  </section>
+  <div class="grid2">
+    <section class="panel stack">
+      <div class="head"><h3>Ventas por ${UI.agrupar === "categoria" ? "categoría" : "producto"}</h3>
+        <div class="row">
+          <div class="seg"><button class="neutral" aria-pressed="${UI.agrupar==="categoria"}" data-a="agrupar" data-t="categoria">Categoría</button><button class="neutral" aria-pressed="${UI.agrupar==="producto"}" data-a="agrupar" data-t="producto">Producto</button></div>
+          <select id="metrica" data-ui="metrica" style="width:auto" aria-label="Medida"><option value="imp" ${met==="imp"?"selected":""}>Facturación</option><option value="mar" ${met==="mar"?"selected":""}>Margen</option><option value="uds" ${met==="uds"?"selected":""}>Unidades</option></select>
+        </div>
+      </div>
+      ${arr.some(g => g.n) ? `<div class="hbars">${arr.slice(0, 15).map(g => `<div class="hb" style="--c:${color(g)}"><span class="lb">${h(etiqueta(g))}</span><span class="vl">${fmt(g[met])}</span><div class="bar"><i style="width:${Math.max(0, g[met])/max*100}%"></i></div></div>`).join("")}</div>`
+        : `<div class="empty">No hay ventas en este periodo. Las salidas con motivo «Venta a cliente» aparecerán aquí.</div>`}
+    </section>
+    <section class="panel stack">
+      <h3>Facturación mensual</h3>
+      ${graficoMensual()}
+    </section>
+  </div>
+  <section class="panel stack">
+    <h3>Stock actual por categoría</h3>
+    <div class="tableWrap"><table><thead><tr><th>Categoría</th><th class="n">Productos</th><th class="n">Unidades</th><th class="n">Valor a coste</th></tr></thead>
+    <tbody>${porCat.map(r => `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${r.c.c};margin-right:8px"></span>${h(r.c.nombre)}</td><td class="n">${fN(r.n)}</td><td class="n">${fN(r.uds)}</td><td class="n">${fE(r.val)}</td></tr>`).join("")}
+    <tr><td><b>Total</b></td><td class="n"><b>${fN(porCat.reduce((s,r)=>s+r.n,0))}</b></td><td class="n"><b>${fN(porCat.reduce((s,r)=>s+r.uds,0))}</b></td><td class="n"><b>${fE(porCat.reduce((s,r)=>s+r.val,0))}</b></td></tr></tbody></table></div>
+  </section>`;
+};
+function graficoMensual(){
+  const now = new Date(), meses = [];
+  for (let i=11;i>=0;i--) { const d = new Date(now.getFullYear(), now.getMonth()-i, 1); meses.push({k:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"), lb:d.toLocaleString("es-ES",{month:"short"}).replace(".",""), v:0}); }
+  const idx = Object.fromEntries(meses.map((m,i) => [m.k,i]));
+  for (const m of C.movs) if (m.tipo==="salida" && m.motivo==="venta") { const k = (m.fecha||"").slice(0,7); if (k in idx) meses[idx[k]].v += num(m.cantidad)*num(m.precio); }
+  const max = Math.max(...meses.map(m => m.v));
+  if (!max) return `<div class="empty">Sin ventas en los últimos 12 meses.</div>`;
+  const paso = Math.pow(10, Math.floor(Math.log10(max))); const top = Math.ceil(max/paso)*paso;
+  const W=560, H=220, L=56, B=24, T=10, cw=(W-L-8)/12;
+  const y = v => T + (H-T-B)*(1 - v/top);
+  const ticks = [0, top/2, top];
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Facturación de los últimos 12 meses">
+    ${ticks.map(t => `<line class="grid" x1="${L}" x2="${W-4}" y1="${y(t)}" y2="${y(t)}"/><text x="${L-6}" y="${y(t)+4}" text-anchor="end">${fE(t)}</text>`).join("")}
+    ${meses.map((m,i) => `<rect class="b ${i===11?"cur":""}" x="${L+i*cw+cw*.18}" y="${y(m.v)}" width="${cw*.64}" height="${Math.max(0,(H-B)-y(m.v))}" rx="3"><title>${m.lb}: ${fE(m.v)}</title></rect><text x="${L+i*cw+cw/2}" y="${H-6}" text-anchor="middle">${m.lb}</text>`).join("")}
+  </svg>`;
+}
+
+/* ---------- Movimientos ---------- */
+VISTAS.movimientos = () => {
+  const q = UI.qMov.trim().toLowerCase();
+  const lista = C.movs.filter(m => (!UI.tipoMov || m.tipo === UI.tipoMov) && (!q || [prodNombre(m.productoId), m.docNum, m.nota, S.productos.get(m.productoId)?.codigo].some(v => v && String(v).toLowerCase().includes(q))));
+  return `${avisoEjemplos()}${cargando()}
+  <section class="panel stack">
+    <div class="head"><h2>Movimientos</h2><div class="row"><button class="btn" data-a="csvMov">Exportar CSV</button><button class="btn" data-a="copiaExp">Copia de seguridad</button><label class="btn" for="copiaImp">Restaurar copia</label><input class="vh" id="copiaImp" type="file" accept=".json,application/json"></div></div>
+    <div class="row">
+      <div class="seg" style="flex:0 1 420px">${[["","Todos"],["entrada","Entradas"],["salida","Salidas"],["ajuste","Recuentos"]].map(([k,t]) => `<button class="neutral" aria-pressed="${UI.tipoMov===k}" data-a="tipoMov" data-t="${k}">${t}</button>`).join("")}</div>
+      <input class="grow" id="qMov" type="search" data-ui="qMov" value="${h(UI.qMov)}" placeholder="Producto, código o nº de albarán" aria-label="Buscar movimiento">
+    </div>
+    ${lista.length ? `<div>${lista.slice(0,300).map(filaMov).join("")}</div>${lista.length>300 ? `<p class="cat">Mostrando 300 de ${lista.length}. Exporta el CSV para verlos todos.</p>` : ""}` : `<div class="empty">No hay movimientos${q||UI.tipoMov?" con estos filtros":""}.</div>`}
+  </section>`;
+};
+
+/* ============ Modales ============ */
+function abrirModal(m){ modal = m; pintarModal(); setTimeout(()=>{ const f = document.querySelector("#modal [autofocus]"); if (f) f.focus(); }, 30); }
+function cerrarModal(){ modal = null; $("#modal").innerHTML = ""; }
+function pintarModal(){
+  if (!modal) return;
+  C = calcular();
+  const a = document.activeElement, aid = a && a.id;
+  $("#modal").innerHTML = `<div class="ov" data-a="ovClick"><div class="md" role="dialog" aria-modal="true" aria-labelledby="mdT">
+    <header><div><h2 id="mdT">${modal.titulo()}</h2>${modal.sub ? `<div class="cat">${modal.sub()}</div>` : ""}</div><button class="x" data-a="cerrar" aria-label="Cerrar">×</button></header>
+    <div class="bd">${modal.cuerpo()}</div>${modal.pie ? `<footer>${modal.pie()}</footer>` : ""}</div></div>`;
+  modal.montar && modal.montar();
+  if (aid) { const e = document.getElementById(aid); if (e) e.focus({preventScroll:true}); }
+}
+
+/* ---------- Ficha de producto ---------- */
+function verProducto(id){
+  abrirModal({vivo:true, conf:false,
+    titulo:() => h(S.productos.get(id)?.nombre || "Producto"),
+    sub:() => h(catNombre(S.productos.get(id))),
+    cuerpo:() => {
+      const p = S.productos.get(id); if (!p) return `<div class="empty">Este producto se ha eliminado.</div>`;
+      const movs = C.movs.filter(m => m.productoId === id);
+      const pedsP = [...S.pedidosProveedor.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId===id) && C.estadoProv.get(x.id)?.est !== "Recibido");
+      const pedsC = [...S.pedidosCliente.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId===id) && C.estadoCli.get(x.id)?.est !== "Servido");
+      const u = h(p.unidad||"ud");
+      return `<div class="kpis">
+        <div class="kpi"><div class="k">En nave</div><div class="v ${esBajo(p)?"lowc":""}">${fN(stockDe(id))} <small class="cat">${u}</small></div><div class="cat">Mínimo ${p.stockMin!==""&&p.stockMin!==undefined ? fN(p.stockMin) : "sin definir"}</div></div>
+        <div class="kpi"><div class="k">En camino</div><div class="v">${fN(C.pendienteRecibir.get(id)||0)}</div><div class="cat">${pedsP.length} pedido(s) a proveedor</div></div>
+        <div class="kpi"><div class="k">Reservado</div><div class="v">${fN(C.reservado.get(id)||0)}</div><div class="cat">${pedsC.length} pedido(s) de cliente</div></div>
+      </div>
+      <div class="grid2" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
+        <div class="stack" style="gap:6px">
+          ${[["Referencia",p.ref],["Origen",ORIGEN[p.origen]],["Proveedor",p.proveedor],["Ubicación",p.ubicacion],["Coste",p.coste!==""&&p.coste!==undefined?fE2(num(p.coste)):""],["PVP",p.pvp!==""&&p.pvp!==undefined?fE2(num(p.pvp)):""]].filter(r => r[1]).map(([k,v]) => `<div class="row" style="justify-content:space-between"><span class="cat">${k}</span><span>${h(v)}</span></div>`).join("")}
+        </div>
+        ${p.codigo ? `<div class="stack" style="gap:6px"><div class="label"><svg id="bc"></svg><div class="ln">${h(p.nombre)}</div></div><button class="btn small" data-a="etiqueta" data-id="${id}">Descargar etiqueta</button></div>` : `<div class="empty">Sin código de barras. Edita el producto para añadir uno o generar un código interno.</div>`}
+      </div>
+      <div><h3 style="margin-bottom:6px">Historial</h3>${movs.length ? movs.slice(0,30).map(filaMov).join("") : `<p class="cat">Sin movimientos.</p>`}</div>`;
+    },
+    pie:() => `<button class="btn danger" data-a="borrarProd" data-id="${id}">${modal.conf ? "Confirmar: eliminar" : "Eliminar"}</button><span style="flex:1"></span><button class="btn" data-a="editarProd" data-id="${id}">Editar</button><button class="btn primary" data-a="elegir" data-id="${id}">Registrar movimiento</button>`,
+    montar:() => { const p = S.productos.get(id), el = document.getElementById("bc"); if (p && p.codigo && el && window.JsBarcode) { try { JsBarcode(el, p.codigo, {format: esEAN13(p.codigo) ? "EAN13" : "CODE128", height:60, fontSize:14, margin:4, background:"#ffffff", lineColor:"#111111"}); } catch(e) { el.outerHTML = `<span class="cat">Código no representable: ${h(p.codigo)}</span>`; } } }
+  });
+}
+function formProducto(id, preset){
+  const p0 = id ? S.productos.get(id) : null;
+  const M = Object.assign({nombre:"", codigo:"", ref:"", categoria:"musculacion", sub:"", origen:"china", proveedor:"", unidad:"ud", stockMin:"", coste:"", pvp:"", ubicacion:"", stockInicial:""}, p0 ? JSON.parse(JSON.stringify(p0)) : {}, preset||{});
+  const proveedores = [...new Set([...S.productos.values()].map(p => p.proveedor).concat([...S.pedidosProveedor.values()].map(p => p.proveedor)).filter(Boolean))].sort();
+  abrirModal({M, form:true,
+    titulo:() => id ? "Editar producto" : "Nuevo producto",
+    cuerpo:() => { const subs = CAT[M.categoria]?.subs || []; return `<div class="fields">
+      <div class="full"><label class="lbl" for="pNombre">Nombre *</label><input id="pNombre" type="text" data-m="nombre" value="${h(M.nombre)}" autofocus placeholder="Prensa de piernas 45°"></div>
+      <div class="full"><label class="lbl" for="pCodigo">Código de barras</label><div class="row"><input class="grow mono" id="pCodigo" type="text" inputmode="numeric" data-m="codigo" value="${h(M.codigo)}" placeholder="Escanea el del fabricante o genera uno interno">
+        <label class="btn" for="fotoProd">Escanear</label><input class="vh" id="fotoProd" type="file" accept="image/*" capture="environment" data-scan="prod"><button class="btn" data-a="genCodigo">Generar interno</button></div></div>
+      <div><label class="lbl" for="pRef">Referencia</label><input id="pRef" type="text" data-m="ref" value="${h(M.ref)}" placeholder="Ref. fabricante"></div>
+      <div><label class="lbl" for="pCat">Categoría</label><select id="pCat" data-m="categoria" data-rerender>${CATS.map(c => `<option value="${c.id}" ${M.categoria===c.id?"selected":""}>${c.nombre}</option>`).join("")}</select></div>
+      ${subs.length ? `<div><label class="lbl" for="pSub">Tipo</label><select id="pSub" data-m="sub"><option value="">—</option>${subs.map(s => `<option ${M.sub===s?"selected":""}>${s}</option>`).join("")}</select></div>` : ""}
+      <div><label class="lbl" for="pOrigen">Origen</label><select id="pOrigen" data-m="origen">${Object.entries(ORIGEN).map(([k,t]) => `<option value="${k}" ${M.origen===k?"selected":""}>${t}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="pProv">Proveedor / fábrica</label><input id="pProv" type="text" list="dlProv" data-m="proveedor" value="${h(M.proveedor)}"><datalist id="dlProv">${proveedores.map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
+      <div><label class="lbl" for="pUd">Unidad</label><select id="pUd" data-m="unidad">${UNIDADES.map(x => `<option ${M.unidad===x?"selected":""}>${x}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="pMin">Stock mínimo</label><input id="pMin" type="number" inputmode="decimal" data-m="stockMin" value="${h(M.stockMin)}"></div>
+      <div><label class="lbl" for="pCoste">Coste unitario (€)</label><input id="pCoste" type="number" step="0.01" inputmode="decimal" data-m="coste" value="${h(M.coste)}"></div>
+      <div><label class="lbl" for="pPvp">PVP (€)</label><input id="pPvp" type="number" step="0.01" inputmode="decimal" data-m="pvp" value="${h(M.pvp)}"></div>
+      <div><label class="lbl" for="pUbi">Ubicación en nave</label><input id="pUbi" type="text" data-m="ubicacion" value="${h(M.ubicacion)}" placeholder="Pasillo B · Estante 3"></div>
+      ${!id ? `<div><label class="lbl" for="pIni">Stock inicial</label><input id="pIni" type="number" inputmode="decimal" data-m="stockInicial" value="${h(M.stockInicial)}" placeholder="0"></div>` : ""}
+    </div>`; },
+    pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" data-a="guardarProd">${id ? "Guardar cambios" : "Dar de alta"}</button>`,
+    guardar: async () => {
+      if (!M.nombre.trim()) { toast("Pon un nombre al producto", true); return; }
+      const cod = M.codigo.trim();
+      if (cod && [...S.productos.values()].some(p => p.codigo === cod && p.id !== id)) { toast("Ese código ya está asignado a otro producto", true); return; }
+      const pid = id || nuevoId();
+      const {stockInicial, ...datos} = M;
+      datos.nombre = datos.nombre.trim(); datos.codigo = cod;
+      if (!(CAT[datos.categoria]?.subs||[]).includes(datos.sub)) datos.sub = "";
+      for (const k of ["stockMin","coste","pvp"]) datos[k] = datos[k] === "" ? "" : num(datos[k]);
+      try {
+        await guardar("productos", pid, datos);
+        if (!id && num(stockInicial)) await guardar("movimientos", nuevoId(), {fecha:new Date().toISOString(), tipo:"ajuste", motivo:"inventario", productoId:pid, cantidad:num(stockInicial), precio:num(datos.coste), docTipo:"", docNum:"", pedidoProveedorId:"", pedidoClienteId:"", nota:"Stock inicial", autor:miId||""});
+        toast(id ? "Producto actualizado" : "Producto dado de alta");
+        if (!id && F.noEncontrado) { seleccionarProducto(pid); return; }
+        cerrarModal();
+      } catch(e) { errorGuardar(e); }
+    }
+  });
+}
+
+/* ---------- Pedidos: ficha y formulario ---------- */
+function verPedido(tipo, id){
+  const prov = tipo === "proveedor";
+  const col = () => prov ? S.pedidosProveedor : S.pedidosCliente;
+  abrirModal({vivo:true, conf:false,
+    titulo:() => { const x = col().get(id); return h(prov ? (x?.proveedor||"Pedido a proveedor") : (x?.cliente||"Pedido de cliente")); },
+    sub:() => { const x = col().get(id); if (!x) return ""; return prov ? `${h(ORIGEN[x.origen]||"")}${x.numero ? " · Pedido " + h(x.numero) : ""}${x.docRef ? " · Proforma/Albarán " + h(x.docRef) : ""} · ${fFecha(x.fecha)}` : [x.presupuesto && "Presupuesto " + h(x.presupuesto), x.albaran && "Albarán " + h(x.albaran), fFecha(x.fecha)].filter(Boolean).join(" · "); },
+    cuerpo:() => {
+      const x = col().get(id); if (!x) return `<div class="empty">Este pedido se ha eliminado.</div>`;
+      const e = (prov ? C.estadoProv.get(id) : C.estadoCli.get(id)) || {tot:0, rec:0, ser:0, est:"Pendiente"};
+      const hecho = prov ? C.recibido : C.servido;
+      const pct = e.tot ? (prov ? e.rec : e.ser)/e.tot*100 : 0;
+      const total = (x.lineas||[]).reduce((s,l) => s + num(l.cantidad)*num(prov ? l.coste : l.precio), 0);
+      const vinc = prov ? (x.clientes||[]).map(c => S.pedidosCliente.get(c)).filter(Boolean) : [...S.pedidosProveedor.values()].filter(p => (p.clientes||[]).includes(id));
+      return `<div class="row" style="justify-content:space-between">${pillEstado(e.est)}<span class="cat">${fN(prov?e.rec:e.ser)} de ${fN(e.tot)} ${prov?"recibidas":"servidas"} · Importe ${fE2(total)}</span></div>
+      <div class="bar ok"><i style="width:${pct}%"></i></div>
+      <div class="tableWrap"><table><thead><tr><th>Producto</th><th class="n">Pedido</th><th class="n">${prov?"Recibido":"Servido"}</th><th class="n">Falta</th>${prov?"":`<th class="n">Stock</th>`}<th></th></tr></thead><tbody>
+        ${(x.lineas||[]).map(l => { const hq = Math.max(0, hecho.get(id+"|"+l.productoId)||0), falta = Math.max(0, num(l.cantidad)-hq); const st = stockDe(l.productoId); return `<tr>
+          <td><div style="font-weight:600">${h(prodNombre(l.productoId))}</div><div class="cat">${fE2(num(prov?l.coste:l.precio))} / ${h(S.productos.get(l.productoId)?.unidad||"ud")}</div></td>
+          <td class="n">${fN(l.cantidad)}</td><td class="n">${fN(hq)}</td><td class="n"><b>${fN(falta)}</b></td>
+          ${prov ? "" : `<td class="n ${st<falta?"lowc":""}">${fN(st)}</td>`}
+          <td class="n">${falta && !x.cancelado && S.productos.get(l.productoId) ? `<button class="btn small" data-a="movPedido" data-tipo="${prov?"entrada":"salida"}" data-ped="${id}" data-pid="${l.productoId}">${prov?"Recibir":"Servir"}</button>` : ""}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      <div><h3 style="margin-bottom:6px">${prov ? "Vinculado a pedidos de cliente" : "Abastecido por pedidos a proveedor"}</h3>
+        ${vinc.length ? `<div class="list">${vinc.map(v => prov ? filaPedCli(v) : filaPedProv(v)).join("")}</div>` : `<p class="cat" style="margin:0">${prov ? "Este pedido no está vinculado a ningún presupuesto o albarán de cliente. Edítalo para vincularlo." : "Ningún pedido a proveedor cubre este presupuesto o albarán todavía."}</p>`}
+      </div>
+      ${x.nota ? `<div><div class="lbl">Nota</div>${h(x.nota)}</div>` : ""}`;
+    },
+    pie:() => `<button class="btn danger" data-a="borrarPed" data-tipo="${tipo}" data-id="${id}">${modal.conf ? "Confirmar: eliminar" : "Eliminar"}</button><span style="flex:1"></span><button class="btn" data-a="editarPed" data-tipo="${tipo}" data-id="${id}">Editar</button>`
+  });
+}
+function formPedido(tipo, id){
+  const prov = tipo === "proveedor";
+  const x0 = id ? (prov ? S.pedidosProveedor : S.pedidosCliente).get(id) : null;
+  const M = Object.assign(prov ? {proveedor:"", origen:"china", numero:"", docRef:"", fecha:hoy(), fechaPrevista:"", clientes:[], nota:"", cancelado:false, lineas:[{productoId:"",cantidad:1,coste:""}]}
+                               : {cliente:"", numero:"", presupuesto:"", albaran:"", fecha:hoy(), nota:"", cancelado:false, lineas:[{productoId:"",cantidad:1,precio:""}]},
+                          x0 ? JSON.parse(JSON.stringify(x0)) : {});
+  M.qVinc = "";
+  const prods = [...S.productos.values()].sort((a,b) => (a.categoria||"").localeCompare(b.categoria||"") || a.nombre.localeCompare(b.nombre));
+  const opciones = sel => `<option value="">Elige producto…</option>` + CATS.map(c => { const ps = prods.filter(p => p.categoria===c.id); return ps.length ? `<optgroup label="${h(c.nombre)}">${ps.map(p => `<option value="${p.id}" ${sel===p.id?"selected":""}>${h(p.nombre)}</option>`).join("")}</optgroup>` : ""; }).join("");
+  const proveedores = [...new Set([...S.pedidosProveedor.values()].map(p => p.proveedor).concat(prods.map(p => p.proveedor)).filter(Boolean))].sort();
+  const clientes = [...new Set([...S.pedidosCliente.values()].map(p => p.cliente).filter(Boolean))].sort();
+  abrirModal({M, form:true,
+    titulo:() => (id ? "Editar " : "Nuevo ") + (prov ? "pedido a proveedor" : "pedido de cliente"),
+    cuerpo:() => {
+      const kP = prov ? "coste" : "precio";
+      const cands = prov ? [...S.pedidosCliente.values()].filter(c => (!c.cancelado && C.estadoCli.get(c.id)?.est !== "Servido") || (M.clientes||[]).includes(c.id))
+        .filter(c => !M.qVinc || JSON.stringify([c.cliente,c.presupuesto,c.albaran,c.numero]).toLowerCase().includes(M.qVinc.toLowerCase())).sort((a,b) => (b.fecha||"").localeCompare(a.fecha||"")) : [];
+      return `<div class="fields">
+        ${prov ? `<div class="full"><label class="lbl" for="oProv">Proveedor *</label><input id="oProv" type="text" list="dlP" data-m="proveedor" value="${h(M.proveedor)}" autofocus><datalist id="dlP">${proveedores.map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
+          <div><label class="lbl" for="oOrigen">Origen</label><select id="oOrigen" data-m="origen">${Object.entries(ORIGEN).map(([k,t]) => `<option value="${k}" ${M.origen===k?"selected":""}>${t}</option>`).join("")}</select></div>
+          <div><label class="lbl" for="oNum">Nº pedido</label><input id="oNum" type="text" data-m="numero" value="${h(M.numero)}" placeholder="PC-2026-031"></div>
+          <div><label class="lbl" for="oRef">Proforma / albarán proveedor</label><input id="oRef" type="text" data-m="docRef" value="${h(M.docRef)}"></div>
+          <div><label class="lbl" for="oFecha">Fecha pedido</label><input id="oFecha" type="date" data-m="fecha" value="${h(M.fecha)}"></div>
+          <div><label class="lbl" for="oPrev">Llegada prevista</label><input id="oPrev" type="date" data-m="fechaPrevista" value="${h(M.fechaPrevista)}"></div>`
+        : `<div class="full"><label class="lbl" for="oCli">Cliente *</label><input id="oCli" type="text" list="dlC" data-m="cliente" value="${h(M.cliente)}" autofocus placeholder="Gimnasio, club o particular"><datalist id="dlC">${clientes.map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
+          <div><label class="lbl" for="oPre">Nº presupuesto</label><input id="oPre" type="text" data-m="presupuesto" value="${h(M.presupuesto)}" placeholder="P-2026-0112"></div>
+          <div><label class="lbl" for="oAlb">Nº albarán</label><input id="oAlb" type="text" data-m="albaran" value="${h(M.albaran)}" placeholder="Cuando se emita"></div>
+          <div><label class="lbl" for="oFecha">Fecha</label><input id="oFecha" type="date" data-m="fecha" value="${h(M.fecha)}"></div>`}
+      </div>
+      <div><div class="lbl">Líneas</div><div class="lineas">
+        ${M.lineas.map((l,i) => `<div class="linea"><select id="l${i}p" data-ml="${i}:productoId" aria-label="Producto">${opciones(l.productoId)}</select>
+          <input id="l${i}q" type="number" inputmode="decimal" data-ml="${i}:cantidad" value="${h(l.cantidad)}" aria-label="Cantidad" placeholder="Cant.">
+          <input class="pr" id="l${i}c" type="number" step="0.01" inputmode="decimal" data-ml="${i}:${kP}" value="${h(l[kP])}" aria-label="${prov?"Coste":"Precio"} unitario" placeholder="${prov?"Coste":"Precio"} €">
+          <button class="btn small ghost" data-a="quitarLinea" data-i="${i}" aria-label="Quitar línea">×</button></div>`).join("")}
+        <div class="row"><button class="btn small" data-a="addLinea">+ Línea</button>${!prods.length ? `<span class="cat">Primero da de alta productos en Stock.</span>` : ""}</div>
+      </div></div>
+      ${prov ? `<div><div class="lbl">Vincular a presupuestos o albaranes de cliente</div>
+        <input id="oQV" type="search" data-m="qVinc" data-rerender value="${h(M.qVinc)}" placeholder="Busca por cliente, presupuesto o albarán" style="margin-bottom:6px">
+        ${cands.length ? `<div class="checks">${cands.map(c => `<label><input type="checkbox" data-vinc="${c.id}" ${(M.clientes||[]).includes(c.id)?"checked":""}><span><b>${h(c.cliente||"Cliente")}</b><br><span class="cat">${c.presupuesto ? "Presup. " + h(c.presupuesto) : ""}${c.albaran ? " · Albarán " + h(c.albaran) : ""} · ${fFecha(c.fecha)}</span></span></label>`).join("")}</div>` : `<p class="cat" style="margin:0">No hay pedidos de cliente abiertos${M.qVinc?" que coincidan":""}.</p>`}
+      </div>` : ""}
+      <div><label class="lbl" for="oNota">Nota</label><textarea id="oNota" data-m="nota">${h(M.nota)}</textarea></div>
+      ${id ? `<label class="row"><input type="checkbox" id="oCanc" data-mcheck="cancelado" ${M.cancelado?"checked":""}> Pedido cancelado</label>` : ""}`;
+    },
+    pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" data-a="guardarPed">${id ? "Guardar cambios" : "Crear pedido"}</button>`,
+    guardar: async () => {
+      if (!(prov ? M.proveedor : M.cliente).trim()) { toast(prov ? "Indica el proveedor" : "Indica el cliente", true); return; }
+      const lineas = M.lineas.filter(l => l.productoId && num(l.cantidad) > 0).map(l => prov ? {productoId:l.productoId, cantidad:num(l.cantidad), coste:l.coste===""?"":num(l.coste)} : {productoId:l.productoId, cantidad:num(l.cantidad), precio:l.precio===""?"":num(l.precio)});
+      if (!lineas.length) { toast("Añade al menos una línea con producto y cantidad", true); return; }
+      const {qVinc, ...datos} = M; datos.lineas = lineas;
+      const pid = id || nuevoId();
+      try { await guardar(prov ? "pedidosProveedor" : "pedidosCliente", pid, datos); toast(id ? "Pedido actualizado" : "Pedido creado"); verPedido(tipo, pid); }
+      catch(e) { errorGuardar(e); }
+    }
+  });
+}
+
+/* ============ Etiquetas de códigos de barras (PDF A4) ============ */
+const FORMATOS = {
+  "3x8": {nombre:"A4 · 24 etiquetas de 70 × 37 mm (3 × 8)", cols:3, filas:8, w:70, h:37, mx:0, my:0.5},
+  "2x7": {nombre:"A4 · 14 etiquetas de 105 × 42,3 mm (2 × 7)", cols:2, filas:7, w:105, h:42.3, mx:0, my:0.45},
+  "4x10": {nombre:"A4 · 40 etiquetas de 52,5 × 29,7 mm (4 × 10)", cols:4, filas:10, w:52.5, h:29.7, mx:0, my:0},
+};
+function etLista(M){ return [...S.productos.values()].filter(p => !M.cat || p.categoria === M.cat).sort((a,b) => (a.categoria||"").localeCompare(b.categoria||"") || a.nombre.localeCompare(b.nombre)); }
+function etTotales(M){ const f = FORMATOS[M.formato]; const n = Object.entries(M.sel).filter(([id]) => S.productos.get(id)?.codigo).reduce((s,[,q]) => s + q, 0); const salto = Math.min(f.cols*f.filas-1, Math.max(0, Math.floor(num(M.salto)))); return {n, hojas: n ? Math.ceil((n + salto) / (f.cols*f.filas)) : 0}; }
+function etResumen(){ const el = document.getElementById("etRes"); if (!el || !modal || !modal.M) return; const {n, hojas} = etTotales(modal.M); el.textContent = n ? `${n} etiqueta${n>1?"s":""} en ${hojas} hoja${hojas>1?"s":""}` : "Elige al menos un producto con código"; const b = document.querySelector('[data-a="etPdf"]'); if (b) b.disabled = !n; }
+function formEtiquetas(){
+  const M = {formato:"3x8", salto:"0", sel:{}, cat:UI.cat || "", confAsig:false};
+  abrirModal({M, form:true,
+    titulo:() => "Imprimir etiquetas",
+    sub:() => "Genera un PDF con hojas de etiquetas adhesivas A4 listas para imprimir",
+    cuerpo:() => {
+      const sin = [...S.productos.values()].filter(p => !p.codigo).length;
+      const lista = etLista(M);
+      return `${sin ? `<div class="notice"><span><b>${sin}</b> producto${sin>1?"s no tienen":" no tiene"} código de barras. Se les puede asignar un código interno EAN-13 (empieza por 20) para etiquetarlos.</span><button class="btn small primary" data-a="etAsignar">${M.confAsig ? "Confirmar: asignar " + sin : "Asignar códigos"}</button></div>` : ""}
+      <div class="fields">
+        <div><label class="lbl" for="etFormato">Hoja de etiquetas</label><select id="etFormato" data-etm="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="etSalto">Empezar en la etiqueta nº</label><input id="etSalto" type="number" min="1" inputmode="numeric" value="${h(String(num(M.salto)+1))}"></div>
+      </div>
+      <div class="chips">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="etCat" data-c="${k}">${t}</button>`).join("")}</div>
+      <div class="row"><button class="btn small" data-a="etTodos">Una de cada</button><button class="btn small" data-a="etStock" title="Una por unidad en nave (una sola para m², m y kg)">Tantas como stock</button><button class="btn small ghost" data-a="etNinguno">Quitar todas</button></div>
+      ${lista.length ? `<div class="checks" style="max-height:340px">${lista.map(p => `<label style="align-items:center"><input type="checkbox" data-etsel="${p.id}" ${M.sel[p.id]?"checked":""} ${p.codigo?"":"disabled"}>
+        <span style="flex:1;min-width:0"><b>${h(p.nombre)}</b><br><span class="cat">${p.codigo ? `<span class="mono">${h(p.codigo)}</span>` : "Sin código"} · stock ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</span></span>
+        <input type="number" min="0" inputmode="numeric" style="width:72px" aria-label="Copias de ${h(p.nombre)}" data-etq="${p.id}" value="${M.sel[p.id]||""}" placeholder="0" ${p.codigo?"":"disabled"}></label>`).join("")}</div>` : `<div class="empty">No hay productos en esta categoría.</div>`}`;
+    },
+    pie:() => { const {n} = etTotales(M); return `<span id="etRes" class="muted" style="margin-right:auto;align-self:center"></span><button class="btn" data-a="cerrar">Cerrar</button><button class="btn primary" data-a="etPdf" ${n?"":"disabled"}>Descargar PDF</button>`; },
+    montar:() => etResumen()
+  });
+}
+// El campo «Empezar en» se muestra desde 1; internamente guardamos cuántas saltar
+document.addEventListener("input", e => { if (e.target.id === "etSalto" && modal && modal.M) { modal.M.salto = String(Math.max(0, Math.floor(num(e.target.value)) - 1)); etResumen(); } }, true);
+async function generarEtiquetas(M){
+  if (!window.jspdf || !window.JsBarcode) { toast("No se pudo cargar el generador de PDF. Comprueba la conexión.", true); return; }
+  const f = FORMATOS[M.formato], porHoja = f.cols * f.filas;
+  const items = [];
+  for (const p of etLista({cat:""})) { const q = M.sel[p.id] || 0; if (p.codigo) for (let i=0;i<q;i++) items.push(p); }
+  if (!items.length) return;
+  if (items.length > 2000) { toast("Máximo 2000 etiquetas por PDF", true); return; }
+  const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4"});
+  const cache = {};
+  const imagen = codigo => {
+    if (cache[codigo]) return cache[codigo];
+    const cv = document.createElement("canvas");
+    JsBarcode(cv, codigo, {format: esEAN13(codigo) ? "EAN13" : "CODE128", width:4, height:110, fontSize:30, margin:0, textMargin:4, background:"#ffffff", lineColor:"#000000"});
+    return cache[codigo] = {url: cv.toDataURL("image/png"), ar: cv.width / cv.height};
+  };
+  const ox = (210 - f.cols*f.w) / 2, oy = (297 - f.filas*f.h) / 2;
+  let pos = Math.min(porHoja-1, Math.max(0, Math.floor(num(M.salto))));
+  items.forEach((p, i) => {
+    if (i > 0 && pos % porHoja === 0) doc.addPage();
+    const k = pos % porHoja, c = k % f.cols, r = Math.floor(k / f.cols);
+    const x = ox + c*f.w, y = oy + r*f.h, pad = Math.min(3.5, f.w*0.06);
+    const fs = f.w < 60 ? 7 : 8.5;
+    doc.setFont("helvetica", "bold"); doc.setFontSize(fs);
+    const lineas = doc.splitTextToSize(p.nombre, f.w - 2*pad).slice(0, 2);
+    doc.text(lineas, x + f.w/2, y + pad + fs*0.32, {align:"center"});
+    const textoH = lineas.length * fs * 0.42;
+    const pie = [p.ref, p.ubicacion].filter(Boolean).join(" · ");
+    const pieH = pie ? 3 : 0;
+    const img = imagen(p.codigo);
+    const maxW = f.w - 2*pad, maxH = f.h - 2*pad - textoH - pieH - 1;
+    let bw = maxW, bh = bw / img.ar; if (bh > maxH) { bh = maxH; bw = bh * img.ar; }
+    doc.addImage(img.url, "PNG", x + (f.w - bw)/2, y + pad + textoH + 0.8, bw, bh);
+    if (pie) { doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.text(doc.splitTextToSize(pie, maxW)[0], x + f.w/2, y + f.h - pad + 0.6, {align:"center"}); }
+    pos++;
+  });
+  await descargar("etiquetas-" + hoy() + ".pdf", doc.output("arraybuffer"));
+}
+
+/* ============ Escáner ============ */
+let zxHints = null;
+function hintsZX(){
+  if (zxHints || !window.ZXing) return zxHints;
+  const Z = window.ZXing, B = Z.BarcodeFormat;
+  zxHints = new Map();
+  zxHints.set(Z.DecodeHintType.TRY_HARDER, true);
+  zxHints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [B.EAN_13,B.EAN_8,B.UPC_A,B.UPC_E,B.CODE_128,B.CODE_39,B.ITF,B.QR_CODE,B.DATA_MATRIX]);
+  return zxHints;
+}
+async function cargarImagen(file){
+  if (window.createImageBitmap) { try { return await createImageBitmap(file, {imageOrientation:"from-image"}); } catch(e) { try { return await createImageBitmap(file); } catch(e2) {} } }
+  return await new Promise((res, rej) => { const u = URL.createObjectURL(file), i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = u; });
+}
+async function leerCodigoDeFoto(file){
+  const img = await cargarImagen(file);
+  if ("BarcodeDetector" in window) {
+    try { const r = await new BarcodeDetector().detect(img); if (r && r.length) return r[0].rawValue; } catch(e) {}
+  }
+  if (!window.ZXing) throw new Error("lector");
+  const w0 = img.width, h0 = img.height;
+  for (const max of [1400, 900, 2200]) {
+    const k = Math.min(1, max / Math.max(w0, h0));
+    const cv = document.createElement("canvas"); cv.width = Math.round(w0*k); cv.height = Math.round(h0*k);
+    cv.getContext("2d", {willReadFrequently:true}).drawImage(img, 0, 0, cv.width, cv.height);
+    try {
+      const Z = window.ZXing, src = new Z.HTMLCanvasElementLuminanceSource(cv);
+      const r = new Z.MultiFormatReader(); r.setHints(hintsZX());
+      return r.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(src))).getText();
+    } catch(e) {}
+  }
+  return null;
+}
+async function alEscanearFoto(input){
+  const file = input.files && input.files[0]; const destino = input.dataset.scan; input.value = "";
+  if (!file) return;
+  toast("Leyendo código…");
+  let codigo = null;
+  try { codigo = await leerCodigoDeFoto(file); } catch(e) { toast("No se pudo cargar el lector de códigos. Comprueba la conexión.", true); return; }
+  if (!codigo) { toast("No se ha encontrado ningún código. Acerca la cámara, con buena luz y el código recto.", true); return; }
+  usarCodigo(codigo, destino);
+}
+function usarCodigo(codigo, destino){
+  if (destino === "prod" && modal && modal.M) { modal.M.codigo = codigo; pintarModal(); toast("Código leído: " + codigo); return; }
+  if (modal && !modal.form) cerrarModal();
+  vista = "escanear"; buscar(codigo);
+}
+// Cámara en directo: solo disponible cuando la app se abre como página propia (fuera del visor de Claude)
+let lectorVivo = null;
+function abrirVivo(){
+  abrirModal({
+    titulo:() => "Escáner en directo", sub:() => "Apunta al código de barras",
+    cuerpo:() => `<video id="video" playsinline muted></video><p class="cat" style="margin:0">Si el navegador pregunta, permite el uso de la cámara.</p>`,
+    pie:() => `<button class="btn" data-a="cerrar">Cerrar</button>`,
+    montar:() => {
+      if (!window.ZXing) { toast("No se pudo cargar el lector de códigos", true); return; }
+      lectorVivo = new ZXing.BrowserMultiFormatReader(hintsZX());
+      lectorVivo.decodeFromConstraints({video:{facingMode:"environment"}}, "video", (res) => {
+        if (res) { const c = res.getText(); pararVivo(); cerrarModal(); if (navigator.vibrate) navigator.vibrate(80); usarCodigo(c, "mov"); }
+      }).catch(() => { toast("No se puede usar la cámara en directo aquí. Usa «Escanear código».", true); pararVivo(); cerrarModal(); });
+    }
+  });
+}
+function pararVivo(){ try { lectorVivo && lectorVivo.reset(); } catch(e) {} lectorVivo = null; }
+// Lector USB/Bluetooth (teclado): tecleo muy rápido acabado en Enter fuera de un campo
+const buf = {s:"", t:0};
+document.addEventListener("keydown", e => {
+  const tg = e.target, enCampo = tg && (/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName));
+  if (enCampo) {
+    if (e.key === "Enter" && tg.id === "busca") { e.preventDefault(); buscar(tg.value); }
+    if (e.key === "Enter" && tg.id === "pCodigo") e.preventDefault();
+    return;
+  }
+  if (e.key === "Escape" && modal) { pararVivo(); cerrarModal(); return; }
+  const now = performance.now();
+  if (now - buf.t > 80) buf.s = "";
+  buf.t = now;
+  if (e.key === "Enter") { if (buf.s.length >= 4) { e.preventDefault(); usarCodigo(buf.s, modal && modal.M && "codigo" in modal.M ? "prod" : "mov"); } buf.s = ""; return; }
+  if (e.key.length === 1) buf.s += e.key;
+});
+
+/* ============ Copia de seguridad ============ */
+async function restaurarCopia(input){
+  const f = input.files && input.files[0]; input.value = ""; if (!f) return;
+  let o; try { o = JSON.parse(await f.text()); } catch(e) { toast("El archivo no es una copia válida", true); return; }
+  if (!o || o.app !== "shop4fit-stocks") { toast("El archivo no es una copia de Shop4Fit Stocks", true); return; }
+  const n = COLS.reduce((s,c) => s + Object.keys(o[c]||{}).length, 0);
+  abrirModal({form:true, titulo:() => "Restaurar copia", sub:() => "Copia del " + h(fFecha(o.fecha, true)),
+    cuerpo:() => `<p style="margin:0">Se añadirán o sobrescribirán <b>${n}</b> registros (${COLS.map(c => Object.keys(o[c]||{}).length + " " + c).join(", ")}). Los registros que ya existan y no estén en la copia se mantienen.</p>`,
+    pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" id="btnRestaurar">Restaurar ${n} registros</button>`,
+    montar:() => { $("#btnRestaurar").onclick = async ev => { ev.target.disabled = true; let k = 0;
+      try { for (const c of COLS) for (const [id, d] of Object.entries(o[c]||{})) { await guardar(c, id, d); if (++k % 25 === 0) ev.target.textContent = "Restaurando… " + k + "/" + n; } toast("Copia restaurada: " + k + " registros"); cerrarModal(); }
+      catch(e) { errorGuardar(e); ev.target.disabled = false; } }; }
+  });
+}
+
+/* ============ Exportar ============ */
+function csv(filas){ return "﻿" + filas.map(f => f.map(v => { const s = String(v ?? ""); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; }).join(";")).join("\r\n"); }
+async function descargar(nombre, datos){
+  if (dl) { try { await dl.save({filename:nombre, data:datos}); } catch(e) { if (e && e.code !== "declined") toast("No se pudo descargar el archivo", true); } return; }
+  try { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([datos])); a.download = nombre; a.click(); } catch(e) { toast("No se pudo descargar el archivo", true); }
+}
+const dec = n => String(Math.round(num(n)*100)/100).replace(".", ",");
+
+/* ============ Eventos ============ */
+document.addEventListener("click", async e => {
+  const t = e.target.closest("[data-a],[data-v]"); if (!t) return;
+  if (t.dataset.v && !t.dataset.a) { vista = t.dataset.v; try { localStorage.setItem(LS_KEY+":vista", vista); } catch(x) {} pintar(); window.scrollTo(0,0); return; }
+  const a = t.dataset.a, id = t.dataset.id;
+  switch (a) {
+    case "ovClick": if (e.target === t) { pararVivo(); cerrarModal(); } return;
+    case "cerrar": pararVivo(); cerrarModal(); return;
+    case "buscar": buscar($("#busca")?.value); return;
+    case "elegir": seleccionarProducto(id); return;
+    case "verProd": verProducto(id); return;
+    case "nuevoProd": formProducto(null, t.dataset.codigo ? {codigo:t.dataset.codigo} : null); return;
+    case "editarProd": formProducto(id); return;
+    case "guardarProd": case "guardarPed": t.disabled = true; await modal.guardar(); t.disabled = false; return;
+    case "genCodigo": modal.M.codigo = codigoInterno(); pintarModal(); return;
+    case "borrarProd":
+      if (!modal.conf) { modal.conf = true; pintarModal(); return; }
+      try { await borrar("productos", id); toast("Producto eliminado. Su historial de movimientos se conserva."); cerrarModal(); if (F.pid===id) Object.assign(F, nuevoF()); } catch(x) { errorGuardar(x); } return;
+    case "etiqueta": { const p = S.productos.get(id), svg = document.getElementById("bc"); if (!p || !svg) return;
+      const s = new XMLSerializer().serializeToString(svg); const w = +svg.getAttribute("width")||300, hh = +svg.getAttribute("height")||100;
+      const out = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${hh+28}" viewBox="0 0 ${w} ${hh+28}"><rect width="100%" height="100%" fill="#fff"/><text x="${w/2}" y="18" text-anchor="middle" font-family="Arial" font-size="14" font-weight="bold">${h(p.nombre)}</text><g transform="translate(0,24)">${s}</g></svg>`;
+      descargar("etiqueta-" + (p.codigo||p.id) + ".svg", out); return; }
+    case "tipo": F.tipo = t.dataset.t; F.motivo = MOTIVOS[F.tipo][0][0]; F.pedido = ""; F.docNum = ""; F.docTipo = F.tipo==="salida" ? "albaran" : "albaran";
+      { const p = S.productos.get(F.pid); F.precio = F.tipo==="entrada" ? (p?.coste ?? "") : (p?.pvp ?? ""); } pintar(); return;
+    case "mas": F.cantidad = num(F.cantidad) + 1; pintar(); return;
+    case "menos": F.cantidad = Math.max(0, num(F.cantidad) - 1); pintar(); return;
+    case "cancelarMov": Object.assign(F, nuevoF()); pintar(); return;
+    case "registrar": registrar(); return;
+    case "vivo": abrirVivo(); return;
+    case "cat": UI.cat = t.dataset.c; pintar(); return;
+    case "bajo": UI.bajo = !UI.bajo; pintar(); return;
+    case "tipoPed": UI.tipoPed = t.dataset.t; pintar(); return;
+    case "nuevoPed": formPedido(UI.tipoPed); return;
+    case "verPedProv": verPedido("proveedor", id); return;
+    case "verPedCli": verPedido("cliente", id); return;
+    case "editarPed": formPedido(t.dataset.tipo, id); return;
+    case "borrarPed":
+      if (!modal.conf) { modal.conf = true; pintarModal(); return; }
+      try { await borrar(t.dataset.tipo === "proveedor" ? "pedidosProveedor" : "pedidosCliente", id); toast("Pedido eliminado"); cerrarModal(); } catch(x) { errorGuardar(x); } return;
+    case "addLinea": modal.M.lineas.push({productoId:"", cantidad:1}); pintarModal(); document.getElementById("l"+(modal.M.lineas.length-1)+"p")?.focus(); return;
+    case "quitarLinea": modal.M.lineas.splice(+t.dataset.i, 1); if (!modal.M.lineas.length) modal.M.lineas.push({productoId:"",cantidad:1}); pintarModal(); return;
+    case "movPedido": seleccionarProducto(t.dataset.pid, {tipo:t.dataset.tipo, motivo:t.dataset.tipo==="entrada"?"compra":"venta", pedido:t.dataset.ped}); return;
+    case "agrupar": UI.agrupar = t.dataset.t; pintar(); return;
+    case "tipoMov": UI.tipoMov = t.dataset.t; pintar(); return;
+    case "etiquetas": formEtiquetas(); return;
+    case "etTodos": { const M = modal.M; for (const p of etLista(M)) if (p.codigo) M.sel[p.id] = M.sel[p.id] || 1; pintarModal(); return; }
+    case "etNinguno": modal.M.sel = {}; pintarModal(); return;
+    case "etStock": { const M = modal.M; for (const p of etLista(M)) if (p.codigo) { const n = ["m²","m","kg"].includes(p.unidad) ? 1 : Math.max(0, Math.ceil(stockDe(p.id))); if (n) M.sel[p.id] = n; else delete M.sel[p.id]; } pintarModal(); return; }
+    case "etCat": modal.M.cat = t.dataset.c; pintarModal(); return;
+    case "etAsignar": {
+      if (!modal.M.confAsig) { modal.M.confAsig = true; pintarModal(); return; }
+      const sin = [...S.productos.values()].filter(p => !p.codigo); const nuevos = [];
+      t.disabled = true;
+      try { for (const p of sin) { const c = codigoInterno(nuevos); nuevos.push(c); const {id:_, ...d} = p; await guardar("productos", p.id, {...d, codigo:c}); } toast(sin.length + " códigos internos asignados"); }
+      catch(x) { errorGuardar(x); }
+      modal.M.confAsig = false; pintarModal(); return; }
+    case "etPdf": t.disabled = true; try { await generarEtiquetas(modal.M); } finally { t.disabled = false; } return;
+    case "copiaExp": {
+      const o = {app:"shop4fit-stocks", version:1, fecha:new Date().toISOString()};
+      for (const c of COLS) o[c] = Object.fromEntries([...S[c]].map(([k,v]) => { const {id:_, ...r} = v; return [k, r]; }));
+      descargar("shop4fit-stocks-copia-" + hoy() + ".json", JSON.stringify(o)); return; }
+    case "csvStock": {
+      const filas = [["Producto","Código","Referencia","Categoría","Tipo","Origen","Proveedor","Ubicación","Unidad","Stock","Stock mínimo","En camino","Reservado","Coste","PVP","Valor a coste"]];
+      for (const p of [...S.productos.values()].sort((a,b)=>(a.categoria||"").localeCompare(b.categoria||"")||a.nombre.localeCompare(b.nombre))) filas.push([p.nombre,p.codigo,p.ref,CAT[p.categoria]?.nombre,p.sub,ORIGEN[p.origen],p.proveedor,p.ubicacion,p.unidad,dec(stockDe(p.id)),p.stockMin,dec(C.pendienteRecibir.get(p.id)||0),dec(C.reservado.get(p.id)||0),dec(p.coste),dec(p.pvp),dec(Math.max(0,stockDe(p.id))*num(p.coste))]);
+      descargar("stock-" + hoy() + ".csv", csv(filas)); return; }
+    case "csvMov": {
+      const filas = [["Fecha","Tipo","Motivo","Producto","Código","Categoría","Cantidad","Precio unitario","Importe","Documento","Nº documento","Pedido proveedor","Pedido cliente","Nota"]];
+      for (const m of C.movs) { const p = S.productos.get(m.productoId); filas.push([new Date(m.fecha).toLocaleString("es-ES"), m.tipo, MOTIVO_TXT[m.motivo]||"", p?.nombre||"", p?.codigo||"", CAT[p?.categoria]?.nombre||"", dec(m.tipo==="salida"?-num(m.cantidad):m.cantidad), dec(m.precio), dec(num(m.cantidad)*num(m.precio)), DOC_TXT[m.docTipo]||"", m.docNum, m.pedidoProveedorId?etiquetaProv(S.pedidosProveedor.get(m.pedidoProveedorId)):"", m.pedidoClienteId?etiquetaCli(S.pedidosCliente.get(m.pedidoClienteId)):"", m.nota]); }
+      descargar("movimientos-" + hoy() + ".csv", csv(filas)); return; }
+    case "borrarEjemplos":
+      if (!UI.confEj) { UI.confEj = true; pintar(); return; }
+      UI.confEj = false;
+      try { for (const c of COLS) for (const d of [...S[c].values()]) if (d.ejemplo) await borrar(c, d.id); Object.assign(F, nuevoF()); toast("Datos de ejemplo borrados"); } catch(x) { errorGuardar(x); }
+      pintar(); return;
+  }
+});
+document.addEventListener("input", e => {
+  const t = e.target, d = t.dataset;
+  if (d.etq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.etq] = n; else delete modal.M.sel[d.etq]; const c = document.querySelector(`[data-etsel="${d.etq}"]`); if (c) c.checked = !!n; etResumen(); return; }
+  if (d.etm !== undefined && modal && modal.M) { modal.M[d.etm] = t.value; etResumen(); return; }
+  if (d.f !== undefined) { F[d.f] = t.value; if (d.f === "cantidad" || d.f === "contado") actualizarPrevisto(); return; }
+  if (d.ui !== undefined && t.tagName === "INPUT") { UI[d.ui] = t.value; pintar(); return; }
+  if (d.m !== undefined && modal && modal.M && t.type !== "checkbox") { modal.M[d.m] = t.value; if (d.rerender !== undefined && t.tagName === "INPUT") pintarModal(); return; }
+  if (d.ml !== undefined && modal && modal.M) { const [i,k] = d.ml.split(":"); modal.M.lineas[+i][k] = t.value; return; }
+});
+document.addEventListener("change", e => {
+  const t = e.target, d = t.dataset;
+  if (d.etsel !== undefined && modal && modal.M) { if (t.checked) modal.M.sel[d.etsel] = modal.M.sel[d.etsel] || 1; else delete modal.M.sel[d.etsel]; const q = document.querySelector(`[data-etq="${d.etsel}"]`); if (q) q.value = modal.M.sel[d.etsel] || ""; etResumen(); return; }
+  if (d.etm !== undefined && modal && modal.M) { modal.M[d.etm] = t.value; etResumen(); return; }
+  if (d.scan !== undefined) { alEscanearFoto(t); return; }
+  if (t.id === "copiaImp") { restaurarCopia(t); return; }
+  if (d.f !== undefined && t.tagName === "SELECT") { F[d.f] = t.value; if (d.f === "pedido") aplicarPedido(); pintar(); return; }
+  if (d.ui !== undefined && t.tagName === "SELECT") { UI[d.ui] = t.value; pintar(); return; }
+  if (d.m !== undefined && t.tagName === "SELECT" && modal && modal.M) { modal.M[d.m] = t.value; if (d.rerender !== undefined) pintarModal(); return; }
+  if (d.mcheck !== undefined && modal && modal.M) { modal.M[d.mcheck] = t.checked; return; }
+  if (d.vinc !== undefined && modal && modal.M) { const s = new Set(modal.M.clientes||[]); t.checked ? s.add(d.vinc) : s.delete(d.vinc); modal.M.clientes = [...s]; return; }
+  if (d.ml !== undefined && modal && modal.M) {
+    const [i,k] = d.ml.split(":"); modal.M.lineas[+i][k] = t.value;
+    if (k === "productoId") { const p = S.productos.get(t.value), kP = "proveedor" in modal.M ? "coste" : "precio"; const l = modal.M.lineas[+i]; if (p && (l[kP] === "" || l[kP] === undefined)) { l[kP] = kP === "coste" ? (p.coste ?? "") : (p.pvp ?? ""); pintarModal(); } }
+  }
+});
+function actualizarPrevisto(){
+  // Actualiza el texto del botón y el stock previsto sin repintar (para no perder el foco al teclear)
+  const p = S.productos.get(F.pid); if (!p) return;
+  const st = stockDe(p.id), q = num(F.cantidad), u = p.unidad||"ud";
+  const prev = F.tipo === "entrada" ? st + q : F.tipo === "salida" ? st - q : num(F.contado);
+  const b = document.querySelector('[data-a="registrar"]');
+  if (b && F.tipo !== "ajuste") b.textContent = (F.tipo==="entrada"?"Registrar entrada":"Registrar salida") + " · " + fN(q) + " " + u;
+  const pv = b && b.closest(".row").parentElement.querySelector(".muted b"); if (pv) pv.textContent = fN(prev) + " " + u;
+}
+
+iniciar();
+</script>
