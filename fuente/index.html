@@ -1021,7 +1021,7 @@ function catTotal(M){ return Object.values(M.sel).reduce((s,q) => s + q, 0); }
 function catResumen(){ const el = document.getElementById("catRes"); if (!el || !modal || !modal.M) return; const n = catTotal(modal.M); el.textContent = n ? n + " etiqueta" + (n>1?"s":"") : ""; const b = document.querySelector('[data-a="catPdf"]'); if (b) b.disabled = !n; }
 const CAT_POR_PAG = 10;
 function formCatalogo(){
-  const M = {q:"", cat:"", sel:{}, formato:"3x8", salto:"1", pag:0, filtro:""};
+  const M = {q:"", cat:"", sel:{}, formato:"rollo50x30", salto:"1", pag:0, filtro:""};
   if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
   abrirModal({M, form:true,
     titulo:() => "Catálogo de la web",
@@ -1037,7 +1037,7 @@ function formCatalogo(){
       const ver = res.slice(M.pag * CAT_POR_PAG, (M.pag + 1) * CAT_POR_PAG);
       const nav = paginas > 1 ? `<div class="catpag"><button class="btn small" data-a="catPag" data-p="0" ${M.pag?"":"disabled"} aria-label="Primera página">«</button><button class="btn small" data-a="catPag" data-p="${M.pag-1}" ${M.pag?"":"disabled"} aria-label="Página anterior">‹ <span class="solo-escritorio">Anterior</span></button><span class="cat">Página ${M.pag+1} de ${paginas}</span><button class="btn small" data-a="catPag" data-p="${M.pag+1}" ${M.pag<paginas-1?"":"disabled"} aria-label="Página siguiente"><span class="solo-escritorio">Siguiente</span> ›</button><button class="btn small" data-a="catPag" data-p="${paginas-1}" ${M.pag<paginas-1?"":"disabled"} aria-label="Última página">»</button></div>` : "";
       return `<div class="fields">
-        <div><label class="lbl" for="catForm">Hoja de etiquetas</label><select id="catForm" data-m="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="catForm">Tamaño de etiqueta</label><select id="catForm" data-m="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
         <div><label class="lbl" for="catSalto">Empezar en la etiqueta nº</label><input id="catSalto" type="number" min="1" inputmode="numeric" data-m="salto" value="${h(M.salto)}"></div>
       </div>
       <input id="catQ" type="search" data-m="q" data-rerender value="${h(M.q)}" placeholder="Nombre, referencia o código" aria-label="Buscar en el catálogo">
@@ -1229,6 +1229,8 @@ function formPedido(tipo, id, preset, alGuardar){
 
 /* ============ Etiquetas de códigos de barras (PDF A4) ============ */
 const FORMATOS = {
+  "rollo50x30": {nombre:"Rollo · etiqueta de 50 × 30 mm (impresora de etiquetas)", cols:1, filas:1, w:50, h:30, pw:50, ph:30},
+  "4x9-50x30": {nombre:"A4 · 36 etiquetas de 50 × 30 mm (4 × 9)", cols:4, filas:9, w:50, h:30},
   "3x8": {nombre:"A4 · 24 etiquetas de 70 × 37 mm (3 × 8)", cols:3, filas:8, w:70, h:37, mx:0, my:0.5},
   "2x7": {nombre:"A4 · 14 etiquetas de 105 × 42,3 mm (2 × 7)", cols:2, filas:7, w:105, h:42.3, mx:0, my:0.45},
   "4x10": {nombre:"A4 · 40 etiquetas de 52,5 × 29,7 mm (4 × 10)", cols:4, filas:10, w:52.5, h:29.7, mx:0, my:0},
@@ -1237,16 +1239,16 @@ function etLista(M){ return [...S.productos.values()].filter(p => !M.cat || p.ca
 function etTotales(M){ const f = FORMATOS[M.formato]; const n = Object.entries(M.sel).filter(([id]) => S.productos.get(id)?.codigo).reduce((s,[,q]) => s + q, 0); const salto = Math.min(f.cols*f.filas-1, Math.max(0, Math.floor(num(M.salto)))); return {n, hojas: n ? Math.ceil((n + salto) / (f.cols*f.filas)) : 0}; }
 function etResumen(){ const el = document.getElementById("etRes"); if (!el || !modal || !modal.M) return; const {n, hojas} = etTotales(modal.M); el.textContent = n ? `${n} etiqueta${n>1?"s":""} en ${hojas} hoja${hojas>1?"s":""}` : "Elige al menos un producto con código"; const b = document.querySelector('[data-a="etPdf"]'); if (b) b.disabled = !n; }
 function formEtiquetas(){
-  const M = {formato:"3x8", salto:"0", sel:{}, cat:UI.cat || "", confAsig:false};
+  const M = {formato:"rollo50x30", salto:"0", sel:{}, cat:UI.cat || "", confAsig:false};
   abrirModal({M, form:true,
     titulo:() => "Imprimir etiquetas",
-    sub:() => "Genera un PDF con hojas de etiquetas adhesivas A4 listas para imprimir",
+    sub:() => "Genera un PDF de etiquetas adhesivas (rollo de 50 × 30 mm u hojas A4) listo para imprimir",
     cuerpo:() => {
       const sin = [...S.productos.values()].filter(p => !p.codigo).length;
       const lista = etLista(M);
       return `${sin ? `<div class="notice"><span><b>${sin}</b> producto${sin>1?"s no tienen":" no tiene"} código de barras. Se les puede asignar un código interno EAN-13 (empieza por 20) para etiquetarlos.</span><button class="btn small primary" data-a="etAsignar">${M.confAsig ? "Confirmar: asignar " + sin : "Asignar códigos"}</button></div>` : ""}
       <div class="fields">
-        <div><label class="lbl" for="etFormato">Hoja de etiquetas</label><select id="etFormato" data-etm="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="etFormato">Tamaño de etiqueta</label><select id="etFormato" data-etm="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
         <div><label class="lbl" for="etSalto">Empezar en la etiqueta nº</label><input id="etSalto" type="number" min="1" inputmode="numeric" value="${h(String(num(M.salto)+1))}"></div>
       </div>
       <div class="chips desliza">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="etCat" data-c="${k}">${t}</button>`).join("")}</div>
@@ -1268,7 +1270,8 @@ async function generarEtiquetas(M, base){
   for (const p of base || etLista({cat:""})) { const q = M.sel[p.id] || 0; if (p.codigo) for (let i=0;i<q;i++) items.push(p); }
   if (!items.length) return;
   if (items.length > 2000) { toast("Máximo 2000 etiquetas por PDF", true); return; }
-  const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4"});
+  const pw = f.pw || 210, ph = f.ph || 297;
+  const doc = new window.jspdf.jsPDF({unit:"mm", format: f.pw ? [pw, ph] : "a4", orientation: pw > ph ? "l" : "p"});
   const cache = {};
   const imagen = codigo => {
     if (cache[codigo]) return cache[codigo];
@@ -1276,7 +1279,7 @@ async function generarEtiquetas(M, base){
     JsBarcode(cv, codigo, {format: esEAN13(codigo) ? "EAN13" : "CODE128", width:4, height:110, fontSize:30, margin:0, textMargin:4, background:"#ffffff", lineColor:"#000000"});
     return cache[codigo] = {url: cv.toDataURL("image/png"), ar: cv.width / cv.height};
   };
-  const ox = (210 - f.cols*f.w) / 2, oy = (297 - f.filas*f.h) / 2;
+  const ox = (pw - f.cols*f.w) / 2, oy = (ph - f.filas*f.h) / 2;
   let pos = Math.min(porHoja-1, Math.max(0, Math.floor(num(M.salto))));
   items.forEach((p, i) => {
     if (i > 0 && pos % porHoja === 0) doc.addPage();
