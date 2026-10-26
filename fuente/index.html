@@ -244,6 +244,9 @@ nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;p
 }
 .catf{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:10px 2px;border-top:1px solid var(--line);align-items:start}
 .catf:first-child{border-top:0}
+.catpag{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0}
+.catpag .btn{min-width:40px}
+.catpag .cat{margin:0 6px}
 .catf img,.catf .sinfoto{width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line);display:block}
 button.pill{border:0;cursor:pointer;font:inherit;font-size:.74rem;font-weight:600}
 .fotoProd{max-height:180px;max-width:100%;object-fit:contain;border-radius:10px;background:#fff;border:1px solid var(--line);justify-self:start}
@@ -1016,8 +1019,9 @@ const catPreset = it => ({nombre:it.n, codigo:it.c, ref:it.r||"", categoria:it.c
 const catBuscar = codigo => CATALOGO && CATALOGO.productos.find(x => x.c === codigo || (x.r && x.r.toLowerCase() === String(codigo).toLowerCase()));
 function catTotal(M){ return Object.values(M.sel).reduce((s,q) => s + q, 0); }
 function catResumen(){ const el = document.getElementById("catRes"); if (!el || !modal || !modal.M) return; const n = catTotal(modal.M); el.textContent = n ? n + " etiqueta" + (n>1?"s":"") : ""; const b = document.querySelector('[data-a="catPdf"]'); if (b) b.disabled = !n; }
+const CAT_POR_PAG = 10;
 function formCatalogo(){
-  const M = {q:"", cat:"", sel:{}, formato:"3x8", salto:"1"};
+  const M = {q:"", cat:"", sel:{}, formato:"3x8", salto:"1", pag:0, filtro:""};
   if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
   abrirModal({M, form:true,
     titulo:() => "Catálogo de la web",
@@ -1027,19 +1031,23 @@ function formCatalogo(){
       if (!CATALOGO.productos.length) return `<div class="empty">El catálogo de la web todavía no está cargado.</div>`;
       const q = M.q.trim().toLowerCase();
       const res = CATALOGO.productos.filter(x => (!M.cat || x.cat === M.cat) && (!q || [x.n, x.r, x.c].some(v => v && v.toLowerCase().includes(q))));
-      const ver = res.slice(0, 60);
+      if (M.filtro !== q + "|" + M.cat) { M.filtro = q + "|" + M.cat; M.pag = 0; }
+      const paginas = Math.max(1, Math.ceil(res.length / CAT_POR_PAG));
+      M.pag = Math.min(Math.max(0, M.pag), paginas - 1);
+      const ver = res.slice(M.pag * CAT_POR_PAG, (M.pag + 1) * CAT_POR_PAG);
+      const nav = paginas > 1 ? `<div class="catpag"><button class="btn small" data-a="catPag" data-p="0" ${M.pag?"":"disabled"} aria-label="Primera página">«</button><button class="btn small" data-a="catPag" data-p="${M.pag-1}" ${M.pag?"":"disabled"} aria-label="Página anterior">‹ <span class="solo-escritorio">Anterior</span></button><span class="cat">Página ${M.pag+1} de ${paginas}</span><button class="btn small" data-a="catPag" data-p="${M.pag+1}" ${M.pag<paginas-1?"":"disabled"} aria-label="Página siguiente"><span class="solo-escritorio">Siguiente</span> ›</button><button class="btn small" data-a="catPag" data-p="${paginas-1}" ${M.pag<paginas-1?"":"disabled"} aria-label="Última página">»</button></div>` : "";
       return `<div class="fields">
         <div><label class="lbl" for="catForm">Hoja de etiquetas</label><select id="catForm" data-m="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
         <div><label class="lbl" for="catSalto">Empezar en la etiqueta nº</label><input id="catSalto" type="number" min="1" inputmode="numeric" data-m="salto" value="${h(M.salto)}"></div>
       </div>
       <input id="catQ" type="search" data-m="q" data-rerender value="${h(M.q)}" placeholder="Nombre, referencia o código" aria-label="Buscar en el catálogo">
       <div class="chips desliza">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="catCat" data-c="${k}">${t}</button>`).join("")}</div>
-      <div class="cat">${fN(res.length)} producto${res.length===1?"":"s"}${res.length > ver.length ? " · se muestran los " + ver.length + " primeros: escribe para buscar" : ""}</div>
-      ${ver.length ? `<div class="list">${ver.map(x => { const p = catEnApp(x); return `<div class="catf">
+      <div class="cat">${fN(res.length)} producto${res.length===1?"":"s"}${paginas > 1 ? " · del " + fN(M.pag*CAT_POR_PAG+1) + " al " + fN(M.pag*CAT_POR_PAG+ver.length) : ""}</div>
+      ${nav}${ver.length ? `<div class="list">${ver.map(x => { const p = catEnApp(x); return `<div class="catf">
         ${x.f ? `<img src="${h(x.f)}" alt="" loading="lazy">` : `<span class="sinfoto"></span>`}
         <div style="min-width:0"><b>${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span></div>
           <div class="row" style="margin-top:6px">${p ? `<button class="pill ok" data-a="verProd" data-id="${p.id}">En Stock · ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</button>` : `<button class="btn small" data-a="altaCat" data-c="${h(x.c)}">Dar de alta</button>`}
-          <label class="cat" style="display:flex;align-items:center;gap:6px">Etiquetas <input type="number" min="0" inputmode="numeric" style="width:70px" data-catq="${h(x.c)}" value="${M.sel[x.c]||""}" placeholder="0"></label></div></div></div>`; }).join("")}</div>` : `<div class="empty">Ningún producto coincide.</div>`}`;
+          <label class="cat" style="display:flex;align-items:center;gap:6px">Etiquetas <input type="number" min="0" inputmode="numeric" style="width:70px" data-catq="${h(x.c)}" value="${M.sel[x.c]||""}" placeholder="0"></label></div></div></div>`; }).join("")}</div>${nav}` : `<div class="empty">Ningún producto coincide.</div>`}`;
     },
     pie:() => `<span id="catRes" class="muted" style="margin-right:auto;align-self:center"></span><a class="btn" href="catalogo/productos-shop4fit.csv" download>Descargar CSV</a><button class="btn primary" data-a="catPdf" ${catTotal(M)?"":"disabled"}>Etiquetas PDF</button>`,
     montar:() => catResumen()
@@ -1465,6 +1473,7 @@ document.addEventListener("click", async e => {
     case "etiquetas": formEtiquetas(); return;
     case "catalogo": formCatalogo(); return;
     case "catCat": modal.M.cat = t.dataset.c; pintarModal(); return;
+    case "catPag": { modal.M.pag = Number(t.dataset.p); pintarModal(); const bd = document.querySelector("#modal .bd"); if (bd) bd.scrollTop = 0; return; }
     case "altaCat": { const it = catBuscar(t.dataset.c); if (!it) return; if (!F.enCatalogo) F.noEncontrado = null; formProducto(null, catPreset(it)); return; }
     case "catPdf": { const M = modal.M, base = CATALOGO.productos.filter(x => M.sel[x.c]).map(x => ({id:x.c, nombre:x.n, codigo:x.c, ref:x.r}));
       t.disabled = true; try { await generarEtiquetas({formato:M.formato, salto:String(Math.max(0, Math.floor(num(M.salto)) - 1)), sel:M.sel}, base); } finally { t.disabled = false; } return; }
