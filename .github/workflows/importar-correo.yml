@@ -1,0 +1,35 @@
+name: Importar correos a Solicitudes
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: importar-correo
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Leer el buzón y crear solicitudes
+        env:
+          IMAP_SERVIDOR: ${{ secrets.IMAP_SERVIDOR }}
+          IMAP_USUARIO: ${{ secrets.IMAP_USUARIO }}
+          IMAP_CLAVE: ${{ secrets.IMAP_CLAVE }}
+          IMAP_CARPETA: ${{ secrets.IMAP_CARPETA }}
+          IMPORTADOR_CLAVE: ${{ secrets.IMPORTADOR_CLAVE }}
+        run: python3 importadores/correo.py
+      # GitHub desactiva las tareas programadas tras 60 días sin actividad en el repositorio; esto las mantiene vivas.
+      - name: Mantener activa la tarea programada
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable importar-correo.yml --repo "$GITHUB_REPOSITORY" || true
