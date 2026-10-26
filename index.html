@@ -93,6 +93,7 @@ main{padding-top:18px;display:grid;gap:18px}
 .grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
 .stack{display:grid;gap:14px}
+.stack>*{min-width:0}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row>.grow{flex:1 1 180px;min-width:0}
 .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:space-between}
@@ -215,6 +216,51 @@ nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;p
 .msgs{display:grid;gap:8px;max-height:46vh;overflow-y:auto}
 .msg{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:grid;gap:3px}
 .msg .tx{white-space:pre-wrap;overflow-wrap:anywhere}
+/* Móvil: tablas como fichas, fichas a pantalla completa, controles a tamaño de dedo */
+@media (max-width:640px){
+  table.tc thead{display:none}
+  table.tc,table.tc tbody{display:block}
+  table.tc tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:4px 10px;padding:12px 2px;border-bottom:1px solid var(--line);align-items:end}
+  table.tc td{border:0;padding:0;text-align:left}
+  table.tc td.tc-main{grid-column:1/-1}
+  table.tc td.tc-oculto{display:none}
+  table.tc td[data-l]::before{content:attr(data-l);display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+  table.tc td.tc-accion{text-align:right}
+  table.tc td.tc-accion .btn{width:100%}
+  table.tc td.tc-accion:empty{display:none}
+}
+@media (max-width:760px){
+  body{padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));font-size:15px}
+  input[type=text],input[type=number],input[type=date],input[type=search],input[type=password],select,textarea{font-size:16px} /* evita el zoom automático del iPhone */
+  .top{gap:8px;padding-block:8px}
+  .logo{width:34px;height:34px}
+  .modo{font-size:0;padding:0;width:10px;height:10px;border-radius:50%;background:var(--muted)}
+  .modo.nube{background:var(--ok)}
+  main{padding-top:12px;gap:12px}
+  .panel{padding:14px}
+  .btn{min-height:42px}
+  .btn.small{min-height:36px}
+  .chip{min-height:36px;padding:6px 12px}
+  .chips.desliza{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-14px;padding-inline:14px;-webkit-overflow-scrolling:touch}
+  .chips.desliza::-webkit-scrollbar{display:none}
+  .row>.chips.desliza{flex:1 1 100%;min-width:0}
+  .solo-escritorio{display:none}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .kpi{padding:10px 12px}
+  .kpi .v{font-size:1.6rem}
+  .head>.row{width:100%}
+  .head>.row>.btn{flex:1 1 auto}
+  .item{padding:12px 4px}
+  .ov{padding:0;align-items:stretch}
+  .md{border-radius:0;max-width:none;min-height:100dvh;display:flex;flex-direction:column;border:0}
+  .md>header{position:sticky;top:0;z-index:2;background:var(--surface);padding:calc(12px + env(safe-area-inset-top,0px)) 14px 12px}
+  .md>.bd{flex:1;padding:14px}
+  .md>footer{position:sticky;bottom:0;z-index:2;background:var(--surface);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
+  .md>footer .btn{flex:1 1 auto}
+  .md>footer>span[style*="flex:1"]{display:none}
+  .x{font-size:2rem;padding:0 8px}
+  .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
 #login[hidden]{display:none}
 #video{width:100%;border-radius:var(--r);background:#000;max-height:50vh;object-fit:cover}
 
@@ -661,7 +707,7 @@ VISTAS.stock = () => {
   return `${avisoEjemplos()}${cargando()}
   <section class="panel stack">
     <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
-    <div class="chips" role="group" aria-label="Categoría">
+    <div class="chips desliza" role="group" aria-label="Categoría">
       <button class="chip" aria-pressed="${!UI.cat}" data-a="cat" data-c="">Todas<span class="n">${prods.length}</span></button>
       ${CATS.map(c => `<button class="chip" aria-pressed="${UI.cat===c.id}" data-a="cat" data-c="${c.id}">${c.nombre}<span class="n">${cnt(c.id)}</span></button>`).join("")}
     </div>
@@ -671,16 +717,16 @@ VISTAS.stock = () => {
       <button class="chip" aria-pressed="${UI.bajo}" data-a="bajo">Solo stock bajo</button>
     </div>
     <div class="cat">${lista.length} productos · ${fN(uds)} unidades · valor a coste <b>${fE(valor)}</b></div>
-    ${lista.length ? `<div class="tableWrap"><table>
+    ${lista.length ? `<div class="tableWrap"><table class="tc">
       <thead><tr><th>Producto</th><th>Código</th><th>Origen</th><th class="n">Stock</th><th class="n">Mín.</th><th class="n">En camino</th><th class="n">Reservado</th><th class="n">Valor</th></tr></thead>
       <tbody>${lista.map(p => { const st = stockDe(p.id); return `<tr style="cursor:pointer" data-a="verProd" data-id="${p.id}">
-        <td><div style="font-weight:600">${h(p.nombre)}</div><div class="cat">${h(catNombre(p))}${p.ubicacion ? " · " + h(p.ubicacion) : ""}</div></td>
-        <td class="mono">${h(p.codigo||"—")}</td><td class="cat">${p.origen==="china"?"China":h(p.proveedor||"Nacional")}</td>
-        <td class="n"><b class="${esBajo(p)?"lowc":""}">${fN(st)}</b> <span class="cat">${h(p.unidad||"ud")}</span></td>
-        <td class="n cat">${p.stockMin!==""&&p.stockMin!==undefined?fN(p.stockMin):"—"}</td>
-        <td class="n">${C.pendienteRecibir.get(p.id) ? fN(C.pendienteRecibir.get(p.id)) : "—"}</td>
-        <td class="n">${C.reservado.get(p.id) ? fN(C.reservado.get(p.id)) : "—"}</td>
-        <td class="n">${fE(Math.max(0,st)*num(p.coste))}</td></tr>`; }).join("")}</tbody></table></div>`
+        <td class="tc-main"><div style="font-weight:600">${h(p.nombre)}</div><div class="cat">${h(catNombre(p))}${p.ubicacion ? " · " + h(p.ubicacion) : ""}</div></td>
+        <td class="mono tc-oculto">${h(p.codigo||"—")}</td><td class="cat tc-oculto">${p.origen==="china"?"China":h(p.proveedor||"Nacional")}</td>
+        <td class="n" data-l="Stock"><b class="${esBajo(p)?"lowc":""}">${fN(st)}</b> <span class="cat">${h(p.unidad||"ud")}</span></td>
+        <td class="n cat" data-l="Mín.">${p.stockMin!==""&&p.stockMin!==undefined?fN(p.stockMin):"—"}</td>
+        <td class="n" data-l="En camino">${C.pendienteRecibir.get(p.id) ? fN(C.pendienteRecibir.get(p.id)) : "—"}</td>
+        <td class="n" data-l="Reservado">${C.reservado.get(p.id) ? fN(C.reservado.get(p.id)) : "—"}</td>
+        <td class="n tc-oculto">${fE(Math.max(0,st)*num(p.coste))}</td></tr>`; }).join("")}</tbody></table></div>`
       : `<div class="empty">${prods.length ? "Ningún producto coincide con los filtros." : "Aún no hay productos. Pulsa «+ Producto» o escanea un código para darlo de alta."}</div>`}
   </section>`;
 };
@@ -767,9 +813,9 @@ VISTAS.solicitudes = () => {
   return `${errCol.solicitudes ? `<div class="notice"><span>La base de datos todavía no admite solicitudes: hay que actualizar las reglas de seguridad de Firebase con el archivo <b>firestore.rules</b> del repositorio.</span></div>` : ""}${cargando()}
   <section class="panel stack">
     <div class="head"><h2>Solicitudes de presupuesto</h2><button class="btn primary" data-a="nuevaSol">+ Nueva solicitud</button></div>
-    <p class="cat" style="margin:0">Todo cliente que pida presupuesto por WhatsApp, correo o teléfono queda aquí hasta que se le presupueste. Las del correo y WhatsApp de empresa entran solas; también puedes pegar un mensaje o, en Android, usar «Compartir» desde WhatsApp hacia S4F Stocks.</p>
+    <p class="cat solo-escritorio" style="margin:0">Todo cliente que pida presupuesto por WhatsApp, correo o teléfono queda aquí hasta que se le presupueste. Las del correo y WhatsApp de empresa entran solas; también puedes pegar un mensaje o, en Android, usar «Compartir» desde WhatsApp hacia S4F Stocks.</p>
     <div class="row">
-      <div class="chips">${Object.entries(filtros).map(([k,[t,f]]) => `<button class="chip" aria-pressed="${UI.estSol===k}" data-a="estSolF" data-t="${k}">${t}<span class="n">${todas.filter(f).length}</span></button>`).join("")}</div>
+      <div class="chips desliza">${Object.entries(filtros).map(([k,[t,f]]) => `<button class="chip" aria-pressed="${UI.estSol===k}" data-a="estSolF" data-t="${k}">${t}<span class="n">${todas.filter(f).length}</span></button>`).join("")}</div>
       ${canales.length > 1 ? `<select style="flex:0 1 170px" data-ui="canalSol" aria-label="Canal"><option value="">Todos los canales</option>${canales.map(([k,t]) => `<option value="${k}" ${UI.canalSol===k?"selected":""}>${t}</option>`).join("")}</select>` : ""}
       <input class="grow" id="qSol" type="search" data-ui="qSol" value="${h(UI.qSol)}" placeholder="Nombre, teléfono, correo o texto" aria-label="Buscar solicitud">
     </div>
@@ -929,9 +975,9 @@ VISTAS.analisis = () => {
   </div>
   <section class="panel stack">
     <h3>Stock actual por categoría</h3>
-    <div class="tableWrap"><table><thead><tr><th>Categoría</th><th class="n">Productos</th><th class="n">Unidades</th><th class="n">Valor a coste</th></tr></thead>
-    <tbody>${porCat.map(r => `<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${r.c.c};margin-right:8px"></span>${h(r.c.nombre)}</td><td class="n">${fN(r.n)}</td><td class="n">${fN(r.uds)}</td><td class="n">${fE(r.val)}</td></tr>`).join("")}
-    <tr><td><b>Total</b></td><td class="n"><b>${fN(porCat.reduce((s,r)=>s+r.n,0))}</b></td><td class="n"><b>${fN(porCat.reduce((s,r)=>s+r.uds,0))}</b></td><td class="n"><b>${fE(porCat.reduce((s,r)=>s+r.val,0))}</b></td></tr></tbody></table></div>
+    <div class="tableWrap"><table class="tc"><thead><tr><th>Categoría</th><th class="n">Productos</th><th class="n">Unidades</th><th class="n">Valor a coste</th></tr></thead>
+    <tbody>${porCat.map(r => `<tr><td class="tc-main"><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${r.c.c};margin-right:8px"></span>${h(r.c.nombre)}</td><td class="n" data-l="Productos">${fN(r.n)}</td><td class="n" data-l="Unidades">${fN(r.uds)}</td><td class="n" data-l="Valor">${fE(r.val)}</td></tr>`).join("")}
+    <tr><td class="tc-main"><b>Total</b></td><td class="n" data-l="Productos"><b>${fN(porCat.reduce((s,r)=>s+r.n,0))}</b></td><td class="n" data-l="Unidades"><b>${fN(porCat.reduce((s,r)=>s+r.uds,0))}</b></td><td class="n" data-l="Valor"><b>${fE(porCat.reduce((s,r)=>s+r.val,0))}</b></td></tr></tbody></table></div>
   </section>`;
 };
 function graficoMensual(){
@@ -1067,12 +1113,12 @@ function verPedido(tipo, id){
       const vinc = prov ? (x.clientes||[]).map(c => S.pedidosCliente.get(c)).filter(Boolean) : [...S.pedidosProveedor.values()].filter(p => (p.clientes||[]).includes(id));
       return `<div class="row" style="justify-content:space-between">${pillEstado(e.est)}<span class="cat">${fN(prov?e.rec:e.ser)} de ${fN(e.tot)} ${prov?"recibidas":"servidas"} · Importe ${fE2(total)}</span></div>
       <div class="bar ok"><i style="width:${pct}%"></i></div>
-      <div class="tableWrap"><table><thead><tr><th>Producto</th><th class="n">Pedido</th><th class="n">${prov?"Recibido":"Servido"}</th><th class="n">Falta</th>${prov?"":`<th class="n">Stock</th>`}<th></th></tr></thead><tbody>
+      <div class="tableWrap"><table class="tc"><thead><tr><th>Producto</th><th class="n">Pedido</th><th class="n">${prov?"Recibido":"Servido"}</th><th class="n">Falta</th>${prov?"":`<th class="n">Stock</th>`}<th></th></tr></thead><tbody>
         ${(x.lineas||[]).map(l => { const hq = Math.max(0, hecho.get(id+"|"+l.productoId)||0), falta = Math.max(0, num(l.cantidad)-hq); const st = stockDe(l.productoId); return `<tr>
-          <td><div style="font-weight:600">${h(prodNombre(l.productoId))}</div><div class="cat">${fE2(num(prov?l.coste:l.precio))} / ${h(S.productos.get(l.productoId)?.unidad||"ud")}</div></td>
-          <td class="n">${fN(l.cantidad)}</td><td class="n">${fN(hq)}</td><td class="n"><b>${fN(falta)}</b></td>
-          ${prov ? "" : `<td class="n ${st<falta?"lowc":""}">${fN(st)}</td>`}
-          <td class="n">${falta && !x.cancelado && S.productos.get(l.productoId) ? `<button class="btn small" data-a="movPedido" data-tipo="${prov?"entrada":"salida"}" data-ped="${id}" data-pid="${l.productoId}">${prov?"Recibir":"Servir"}</button>` : ""}</td></tr>`; }).join("")}
+          <td class="tc-main"><div style="font-weight:600">${h(prodNombre(l.productoId))}</div><div class="cat">${fE2(num(prov?l.coste:l.precio))} / ${h(S.productos.get(l.productoId)?.unidad||"ud")}</div></td>
+          <td class="n" data-l="Pedido">${fN(l.cantidad)}</td><td class="n" data-l="${prov?"Recibido":"Servido"}">${fN(hq)}</td><td class="n" data-l="Falta"><b>${fN(falta)}</b></td>
+          ${prov ? "" : `<td class="n ${st<falta?"lowc":""}" data-l="Stock">${fN(st)}</td>`}
+          <td class="n tc-accion">${falta && !x.cancelado && S.productos.get(l.productoId) ? `<button class="btn small" data-a="movPedido" data-tipo="${prov?"entrada":"salida"}" data-ped="${id}" data-pid="${l.productoId}">${prov?"Recibir":"Servir"}</button>` : ""}</td></tr>`; }).join("")}
       </tbody></table></div>
       <div><h3 style="margin-bottom:6px">${prov ? "Vinculado a pedidos de cliente" : "Abastecido por pedidos a proveedor"}</h3>
         ${vinc.length ? `<div class="list">${vinc.map(v => prov ? filaPedCli(v) : filaPedProv(v)).join("")}</div>` : `<p class="cat" style="margin:0">${prov ? "Este pedido no está vinculado a ningún presupuesto o albarán de cliente. Edítalo para vincularlo." : "Ningún pedido a proveedor cubre este presupuesto o albarán todavía."}</p>`}
@@ -1161,7 +1207,7 @@ function formEtiquetas(){
         <div><label class="lbl" for="etFormato">Hoja de etiquetas</label><select id="etFormato" data-etm="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
         <div><label class="lbl" for="etSalto">Empezar en la etiqueta nº</label><input id="etSalto" type="number" min="1" inputmode="numeric" value="${h(String(num(M.salto)+1))}"></div>
       </div>
-      <div class="chips">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="etCat" data-c="${k}">${t}</button>`).join("")}</div>
+      <div class="chips desliza">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="etCat" data-c="${k}">${t}</button>`).join("")}</div>
       <div class="row"><button class="btn small" data-a="etTodos">Una de cada</button><button class="btn small" data-a="etStock" title="Una por unidad en nave (una sola para m², m y kg)">Tantas como stock</button><button class="btn small ghost" data-a="etNinguno">Quitar todas</button></div>
       ${lista.length ? `<div class="checks" style="max-height:340px">${lista.map(p => `<label style="align-items:center"><input type="checkbox" data-etsel="${p.id}" ${M.sel[p.id]?"checked":""} ${p.codigo?"":"disabled"}>
         <span style="flex:1;min-width:0"><b>${h(p.nombre)}</b><br><span class="cat">${p.codigo ? `<span class="mono">${h(p.codigo)}</span>` : "Sin código"} · stock ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</span></span>
