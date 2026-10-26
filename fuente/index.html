@@ -719,6 +719,7 @@ function extraerContacto(texto){
   const wa = t.match(/^\[[^\]]+\]\s*([^:\n]{2,40}):/m); // «[19/10/26, 20:15] Juan Pérez: …» al compartir mensajes desde WhatsApp
   return {email, telefono, nombre: wa ? wa[1].trim() : ""};
 }
+const CORREO_PUBLICO = /@(gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|protonmail|telefonica|movistar)\./i;
 const solTitulo = s => s ? (s.nombre || s.empresa || (s.telefono ? "+" + s.telefono : "") || s.email || "Sin nombre") : "Solicitud eliminada";
 const solUltimo = s => (s.mensajes||[]).slice(-1)[0];
 const solPorAtender = s => s.sinLeer || ["nueva","curso"].includes(s.estado || "nueva");
@@ -790,7 +791,8 @@ function verSolicitud(id){
         ${pres.length ? `<div class="list" style="margin-top:6px">${pres.map(p => `<div class="row" style="flex-wrap:nowrap"><div class="grow">${filaPedCli(p)}</div><button class="btn small ghost" data-a="desvincPed" data-id="${id}" data-ped="${p.id}" aria-label="Desvincular">×</button></div>`).join("")}</div>` : `<p class="cat" style="margin:6px 0 0">Todavía no tiene presupuesto. Créalo aquí o vincula uno que ya exista.</p>`}
       </div>
       ${otras.length ? `<div><h3 style="margin-bottom:6px">Otras solicitudes de este contacto</h3><div class="list">${otras.map(filaSol).join("")}</div></div>` : ""}
-      ${s.nota ? `<div><div class="lbl">Nota</div>${h(s.nota)}</div>` : ""}`;
+      ${s.nota ? `<div><div class="lbl">Nota</div>${h(s.nota)}</div>` : ""}
+      ${s.email && window.FIREBASE_CONFIG ? `<div class="row"><span class="cat">¿No es un cliente (proveedor, aviso…)?</span><button class="btn small" data-a="ignorarRem" data-id="${id}" data-r="${h(s.email)}">No importar más de ${h(s.email)}</button>${CORREO_PUBLICO.test(s.email) ? "" : `<button class="btn small" data-a="ignorarRem" data-id="${id}" data-r="@${h(s.email.split("@")[1])}">Ni de @${h(s.email.split("@")[1])}</button>`}</div>` : ""}`;
     },
     pie:() => `<button class="btn danger" data-a="borrarSol" data-id="${id}">${modal.conf ? "Confirmar: eliminar" : "Eliminar"}</button><span style="flex:1"></span><button class="btn" data-a="editarSol" data-id="${id}">Editar datos</button>`
   });
@@ -1346,6 +1348,9 @@ document.addEventListener("click", async e => {
     case "presSol": { const s = S.solicitudes.get(id); if (!s) return;
       formPedido("cliente", null, {cliente: s.empresa || s.nombre || "", nota: [s.asunto, s.telefono && "Tel. +" + s.telefono, s.email].filter(Boolean).join(" · ")},
         async pid => { const x = S.solicitudes.get(id); if (!x) return; const c = {pedidosCliente:[...new Set([...(x.pedidosCliente||[]), pid])]}; if (["nueva","curso"].includes(x.estado||"nueva")) c.estado = "presupuestada"; await actualizar("solicitudes", id, c); }); return; }
+    case "ignorarRem": // el importador de correo deja de traer a este remitente o dominio
+      db.collection("importador").doc("ignorados").set({remitentes: firebase.firestore.FieldValue.arrayUnion(t.dataset.r.toLowerCase())}, {merge:true}).catch(errorGuardar);
+      await actualizar("solicitudes", id, {estado:"descartada", sinLeer:false}); toast("No se importarán más correos de " + t.dataset.r); cerrarModal(); return;
     case "borrarSol":
       if (!modal.conf) { modal.conf = true; pintarModal(); return; }
       try { await borrar("solicitudes", id); toast("Solicitud eliminada"); cerrarModal(); } catch(x) { errorGuardar(x); } return;
