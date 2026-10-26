@@ -20,9 +20,10 @@ service cloud.firestore {
         && request.resource.data.mensajes.size() >= resource.data.mensajes.size();
     }
 
-    // Marcador de hasta dónde ha leído el importador de correo.
+    // Marcador de hasta dónde ha leído el importador de correo y lista de remitentes a ignorar (la edita la oficina desde la app).
     match /importador/{id} {
       allow read, write: if esImportador();
+      allow read, write: if request.auth != null && !esImportador() && id == 'ignorados';
     }
   }
 }

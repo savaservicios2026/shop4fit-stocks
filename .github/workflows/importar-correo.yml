@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Leer el buzón y crear solicitudes
         env:
+          M365_TENANT: ${{ secrets.M365_TENANT }}
+          M365_CLIENTE: ${{ secrets.M365_CLIENTE }}
+          M365_SECRETO: ${{ secrets.M365_SECRETO }}
+          M365_BUZON: ${{ secrets.M365_BUZON }}
+          CORREO_TODO: ${{ secrets.CORREO_TODO }}
           IMAP_SERVIDOR: ${{ secrets.IMAP_SERVIDOR }}
           IMAP_USUARIO: ${{ secrets.IMAP_USUARIO }}
           IMAP_CLAVE: ${{ secrets.IMAP_CLAVE }}
