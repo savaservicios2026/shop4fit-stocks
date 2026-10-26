@@ -12,19 +12,34 @@ Todo funciona con el plan gratuito de Firebase (Spark): no hacen falta Cloud Fun
 
 ## 1. Correo de empresa (cada 10 minutos, GitHub Actions)
 
-`correo.py` lee el buzón por IMAP sin marcar nada como leído y crea o amplía la solicitud del remitente. Ignora boletines, avisos automáticos y `no-reply`.
+`correo.py` lee la bandeja de entrada sin marcar nada como leído. Solo crea solicitudes con los correos que parecen una petición (presupuesto, oferta, precio, solicitud, lead…). Deja fuera los correos internos, los boletines, la bandeja «Otros» de Outlook y los remitentes que marques en la app con **«No importar más de…»** (por ejemplo, un proveedor que os manda sus presupuestos).
 
-En GitHub → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*:
+Los secretos se crean en GitHub → *Settings* → *Secrets and variables* → *Actions* → *New repository secret*. Siempre hace falta `IMPORTADOR_CLAVE`, la contraseña del paso 0.
+
+### Microsoft 365 / Outlook (administracion@savaservicios.com)
+
+Microsoft 365 ya no deja entrar por IMAP con contraseña, así que se usa una aplicación registrada en la empresa:
+
+1. Entra en **entra.microsoft.com** con una cuenta de administrador → *Aplicaciones* → *Registros de aplicaciones* → **Nuevo registro**. Nombre: `Shop4Fit Solicitudes`; *Solo las cuentas de este directorio organizativo*; **Registrar**.
+2. En la página que se abre, copia **Id. de aplicación (cliente)** → secreto `M365_CLIENTE`, y **Id. de directorio (inquilino)** → secreto `M365_TENANT`.
+3. *Permisos de API* → **Agregar un permiso** → *Microsoft Graph* → **Permisos de aplicación** → marca `Mail.Read` → *Agregar permisos*. Después pulsa **Conceder consentimiento de administrador** y confirma.
+4. *Certificados y secretos* → **Nuevo secreto de cliente** → caducidad 24 meses → *Agregar*. Copia la columna **Valor** (solo se ve una vez) → secreto `M365_SECRETO`.
+5. Secreto `M365_BUZON`: `administracion@savaservicios.com`.
+
+El secreto de cliente caduca a los 24 meses: entonces se crea otro y se cambia `M365_SECRETO`.
+
+### Otros buzones (Gmail, correo del hosting) por IMAP
 
 | Secreto | Valor |
 |---|---|
 | `IMAP_SERVIDOR` | Gmail / Google Workspace: `imap.gmail.com`. Otros: el servidor IMAP del proveedor |
-| `IMAP_USUARIO` | la dirección del buzón, p. ej. `info@…` |
-| `IMAP_CLAVE` | Gmail: una *contraseña de aplicación* (Cuenta de Google → Seguridad → Verificación en dos pasos → Contraseñas de aplicaciones). Otros: la contraseña del buzón |
-| `IMPORTADOR_CLAVE` | la contraseña del paso 0 |
+| `IMAP_USUARIO` | la dirección del buzón |
+| `IMAP_CLAVE` | Gmail: una *contraseña de aplicación*. Otros: la contraseña del buzón |
 | `IMAP_CARPETA` | opcional; por defecto `INBOX` |
 
-Después: *Actions* → *Importar correos a Solicitudes* → *Run workflow* para probarlo. La primera vez importa los correos de los últimos 3 días.
+### Probarlo
+
+GitHub → *Actions* → *Importar correos a Solicitudes* → **Run workflow**. La primera vez revisa los correos de los últimos 3 días. Si quieres que entren todos los correos y no solo los que parecen peticiones, crea el secreto `CORREO_TODO` con el valor `si`.
 
 ## 2. WhatsApp de empresa
 
