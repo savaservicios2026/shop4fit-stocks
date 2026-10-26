@@ -242,6 +242,11 @@ nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;p
   .x{font-size:2rem;padding:0 8px}
   .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 }
+.catf{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:10px 2px;border-top:1px solid var(--line);align-items:start}
+.catf:first-child{border-top:0}
+.catf img,.catf .sinfoto{width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid var(--line);display:block}
+button.pill{border:0;cursor:pointer;font:inherit;font-size:.74rem;font-weight:600}
+.fotoProd{max-height:180px;max-width:100%;object-fit:contain;border-radius:10px;background:#fff;border:1px solid var(--line);justify-self:start}
 #login[hidden]{display:none}
 #video{width:100%;border-radius:var(--r);background:#000;max-height:50vh;object-fit:cover}
 
@@ -324,7 +329,7 @@ let modal = null;
 const nombres = {};
 const enMarco = (()=>{ try { return window.self !== window.top; } catch(e) { return true; } })();
 
-function nuevoF(){ return {pid:null, tipo:"entrada", motivo:"compra", cantidad:1, contado:"", pedido:"", docTipo:"albaran", docNum:"", precio:"", nota:"", busqueda:"", resultados:null, noEncontrado:null}; }
+function nuevoF(){ return {enCatalogo:null, pid:null, tipo:"entrada", motivo:"compra", cantidad:1, contado:"", pedido:"", docTipo:"albaran", docNum:"", precio:"", nota:"", busqueda:"", resultados:null, noEncontrado:null}; }
 
 /* ============ Utilidades ============ */
 const $ = s => document.querySelector(s);
@@ -363,6 +368,7 @@ const esEAN13 = c => /^\d{13}$/.test(c) && eanCheck(c.slice(0,12)) === +c[12];
 /* ============ Almacenamiento: nube (db) o este dispositivo ============ */
 async function iniciar(){
   pintar();
+  cargarCatalogo();
   if (window.FIREBASE_CONFIG && window.firebase) return iniciarFirebase();
   const c = window.claude;
   if (c && typeof c.use === "function") {
@@ -540,7 +546,8 @@ VISTAS.escanear = () => {
         <label class="lbl" for="busca">Código, referencia o nombre</label>
         <div class="row"><input class="grow" id="busca" type="search" autocomplete="off" data-f="busqueda" value="${h(F.busqueda)}" placeholder="8412345678901 o «prensa»"><button class="btn" data-a="buscar">Buscar</button></div>
       </div>
-      ${F.noEncontrado ? `<div class="notice"><span>El código <b class="mono">${h(F.noEncontrado)}</b> no está dado de alta.</span><button class="btn small primary" data-a="nuevoProd" data-codigo="${h(F.noEncontrado)}">Dar de alta producto</button></div>` : ""}
+      ${F.enCatalogo ? `<div class="notice info"><span>Es <b>${h(F.enCatalogo.n)}</b> del catálogo de la web, todavía sin dar de alta en Stock.</span><button class="btn small primary" data-a="altaCat" data-c="${h(F.enCatalogo.c)}">Dar de alta</button></div>` : ""}
+      ${F.noEncontrado && !F.enCatalogo ? `<div class="notice"><span>El código <b class="mono">${h(F.noEncontrado)}</b> no está dado de alta.</span><button class="btn small primary" data-a="nuevoProd" data-codigo="${h(F.noEncontrado)}">Dar de alta producto</button></div>` : ""}
       ${F.resultados ? (F.resultados.length ? `<div><div class="lbl">Elige el producto</div><div class="list">${F.resultados.map(r => `<button class="item" data-a="elegir" data-id="${r.id}"><span class="t">${h(r.nombre)}</span><span class="r"><b>${fN(stockDe(r.id))}</b> ${h(r.unidad||"ud")}</span><span class="s">${h(catNombre(r))} · <span class="mono">${h(r.codigo||"sin código")}</span></span></button>`).join("")}</div></div>` : `<div class="empty">No hay productos que coincidan con «${h(F.busqueda)}».</div>`) : ""}
       ${p ? formMovimiento(p) : (!F.resultados && !F.noEncontrado ? `<div class="empty">Escanea o busca un producto para registrar el movimiento.</div>` : "")}
     </section>
@@ -629,12 +636,14 @@ function aplicarPedido(){
 }
 function buscar(texto){
   const t = String(texto||"").trim();
-  F.busqueda = t; F.resultados = null; F.noEncontrado = null;
+  F.busqueda = t; F.resultados = null; F.noEncontrado = null; F.enCatalogo = null;
   if (!t) { pintar(); return; }
   const prods = [...S.productos.values()];
   const exacto = prods.find(p => (p.codigo && p.codigo === t) || (p.ref && p.ref.toLowerCase() === t.toLowerCase()));
   if (exacto) { seleccionarProducto(exacto.id); toast("Producto: " + exacto.nombre); return; }
   const tl = t.toLowerCase();
+  const ct = catBuscar(t);
+  if (ct) { F.pid = null; F.enCatalogo = ct; F.noEncontrado = t; pintar(); return; }
   const res = prods.filter(p => [p.nombre, p.ref, p.codigo, p.proveedor].some(v => v && String(v).toLowerCase().includes(tl)));
   F.pid = null;
   if (res.length === 1) { seleccionarProducto(res[0].id); return; }
@@ -687,7 +696,7 @@ VISTAS.stock = () => {
   const cnt = id => prods.filter(p => p.categoria === id).length;
   return `${avisoEjemplos()}${cargando()}
   <section class="panel stack">
-    <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
+    <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="catalogo">Catálogo web</button><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
     <div class="chips desliza" role="group" aria-label="Categoría">
       <button class="chip" aria-pressed="${!UI.cat}" data-a="cat" data-c="">Todas<span class="n">${prods.length}</span></button>
       ${CATS.map(c => `<button class="chip" aria-pressed="${UI.cat===c.id}" data-a="cat" data-c="${c.id}">${c.nombre}<span class="n">${cnt(c.id)}</span></button>`).join("")}
@@ -993,6 +1002,50 @@ VISTAS.movimientos = () => {
   </section>`;
 };
 
+/* ---------- Catálogo de la web (catalogo.json, generado desde la exportación de la tienda) ---------- */
+// Los productos de shop4fit.online con su código de barras fijo. No se guardan en la base de datos:
+// un producto pasa a Stock solo cuando se da de alta (al entrar en la nave).
+let CATALOGO = null, catPromesa = null;
+function cargarCatalogo(){
+  if (!catPromesa) catPromesa = fetch("catalogo.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : null)
+    .then(j => (CATALOGO = j && j.productos ? j : {productos:[]})).catch(() => (CATALOGO = {productos:[]}));
+  return catPromesa;
+}
+const catEnApp = it => [...S.productos.values()].find(p => (p.codigo && p.codigo === it.c) || (it.r && p.ref && p.ref.toLowerCase() === it.r.toLowerCase()));
+const catPreset = it => ({nombre:it.n, codigo:it.c, ref:it.r||"", categoria:it.cat||"funcional", sub:it.sub||"", foto:it.f||"", webId:it.i});
+const catBuscar = codigo => CATALOGO && CATALOGO.productos.find(x => x.c === codigo || (x.r && x.r.toLowerCase() === String(codigo).toLowerCase()));
+function catTotal(M){ return Object.values(M.sel).reduce((s,q) => s + q, 0); }
+function catResumen(){ const el = document.getElementById("catRes"); if (!el || !modal || !modal.M) return; const n = catTotal(modal.M); el.textContent = n ? n + " etiqueta" + (n>1?"s":"") : ""; const b = document.querySelector('[data-a="catPdf"]'); if (b) b.disabled = !n; }
+function formCatalogo(){
+  const M = {q:"", cat:"", sel:{}, formato:"3x8", salto:"1"};
+  if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
+  abrirModal({M, form:true,
+    titulo:() => "Catálogo de la web",
+    sub:() => CATALOGO ? `${fN(CATALOGO.productos.length)} productos de shop4fit.online${CATALOGO.generado ? " · actualizado " + fFecha(CATALOGO.generado) : ""}` : "Cargando…",
+    cuerpo:() => {
+      if (!CATALOGO) return `<div class="empty">Cargando catálogo…</div>`;
+      if (!CATALOGO.productos.length) return `<div class="empty">El catálogo de la web todavía no está cargado.</div>`;
+      const q = M.q.trim().toLowerCase();
+      const res = CATALOGO.productos.filter(x => (!M.cat || x.cat === M.cat) && (!q || [x.n, x.r, x.c].some(v => v && v.toLowerCase().includes(q))));
+      const ver = res.slice(0, 60);
+      return `<div class="fields">
+        <div><label class="lbl" for="catForm">Hoja de etiquetas</label><select id="catForm" data-m="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="catSalto">Empezar en la etiqueta nº</label><input id="catSalto" type="number" min="1" inputmode="numeric" data-m="salto" value="${h(M.salto)}"></div>
+      </div>
+      <input id="catQ" type="search" data-m="q" data-rerender value="${h(M.q)}" placeholder="Nombre, referencia o código" aria-label="Buscar en el catálogo">
+      <div class="chips desliza">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="catCat" data-c="${k}">${t}</button>`).join("")}</div>
+      <div class="cat">${fN(res.length)} producto${res.length===1?"":"s"}${res.length > ver.length ? " · se muestran los " + ver.length + " primeros: escribe para buscar" : ""}</div>
+      ${ver.length ? `<div class="list">${ver.map(x => { const p = catEnApp(x); return `<div class="catf">
+        ${x.f ? `<img src="${h(x.f)}" alt="" loading="lazy">` : `<span class="sinfoto"></span>`}
+        <div style="min-width:0"><b>${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span></div>
+          <div class="row" style="margin-top:6px">${p ? `<button class="pill ok" data-a="verProd" data-id="${p.id}">En Stock · ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</button>` : `<button class="btn small" data-a="altaCat" data-c="${h(x.c)}">Dar de alta</button>`}
+          <label class="cat" style="display:flex;align-items:center;gap:6px">Etiquetas <input type="number" min="0" inputmode="numeric" style="width:70px" data-catq="${h(x.c)}" value="${M.sel[x.c]||""}" placeholder="0"></label></div></div></div>`; }).join("")}</div>` : `<div class="empty">Ningún producto coincide.</div>`}`;
+    },
+    pie:() => `<span id="catRes" class="muted" style="margin-right:auto;align-self:center"></span><a class="btn" href="catalogo/productos-shop4fit.csv" download>Descargar CSV</a><button class="btn primary" data-a="catPdf" ${catTotal(M)?"":"disabled"}>Etiquetas PDF</button>`,
+    montar:() => catResumen()
+  });
+}
+
 /* ============ Modales ============ */
 function abrirModal(m){ modal = m; pintarModal(); setTimeout(()=>{ const f = document.querySelector("#modal [autofocus]"); if (f) f.focus(); }, 30); }
 function cerrarModal(){ modal = null; $("#modal").innerHTML = ""; }
@@ -1018,7 +1071,7 @@ function verProducto(id){
       const pedsP = [...S.pedidosProveedor.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId===id) && C.estadoProv.get(x.id)?.est !== "Recibido");
       const pedsC = [...S.pedidosCliente.values()].filter(x => !x.cancelado && (x.lineas||[]).some(l => l.productoId===id) && C.estadoCli.get(x.id)?.est !== "Servido");
       const u = h(p.unidad||"ud");
-      return `<div class="kpis">
+      return `${p.foto ? `<img class="fotoProd" src="${h(p.foto)}" alt="">` : ""}<div class="kpis">
         <div class="kpi"><div class="k">En nave</div><div class="v ${esBajo(p)?"lowc":""}">${fN(stockDe(id))} <small class="cat">${u}</small></div><div class="cat">Mínimo ${p.stockMin!==""&&p.stockMin!==undefined ? fN(p.stockMin) : "sin definir"}</div></div>
         <div class="kpi"><div class="k">En camino</div><div class="v">${fN(C.pendienteRecibir.get(id)||0)}</div><div class="cat">${pedsP.length} pedido(s) a proveedor</div></div>
         <div class="kpi"><div class="k">Reservado</div><div class="v">${fN(C.reservado.get(id)||0)}</div><div class="cat">${pedsC.length} pedido(s) de cliente</div></div>
@@ -1200,11 +1253,11 @@ function formEtiquetas(){
 }
 // El campo «Empezar en» se muestra desde 1; internamente guardamos cuántas saltar
 document.addEventListener("input", e => { if (e.target.id === "etSalto" && modal && modal.M) { modal.M.salto = String(Math.max(0, Math.floor(num(e.target.value)) - 1)); etResumen(); } }, true);
-async function generarEtiquetas(M){
+async function generarEtiquetas(M, base){
   if (!window.jspdf || !window.JsBarcode) { toast("No se pudo cargar el generador de PDF. Comprueba la conexión.", true); return; }
   const f = FORMATOS[M.formato], porHoja = f.cols * f.filas;
   const items = [];
-  for (const p of etLista({cat:""})) { const q = M.sel[p.id] || 0; if (p.codigo) for (let i=0;i<q;i++) items.push(p); }
+  for (const p of base || etLista({cat:""})) { const q = M.sel[p.id] || 0; if (p.codigo) for (let i=0;i<q;i++) items.push(p); }
   if (!items.length) return;
   if (items.length > 2000) { toast("Máximo 2000 etiquetas por PDF", true); return; }
   const doc = new window.jspdf.jsPDF({unit:"mm", format:"a4"});
@@ -1410,6 +1463,11 @@ document.addEventListener("click", async e => {
     case "agrupar": UI.agrupar = t.dataset.t; pintar(); return;
     case "tipoMov": UI.tipoMov = t.dataset.t; pintar(); return;
     case "etiquetas": formEtiquetas(); return;
+    case "catalogo": formCatalogo(); return;
+    case "catCat": modal.M.cat = t.dataset.c; pintarModal(); return;
+    case "altaCat": { const it = catBuscar(t.dataset.c); if (!it) return; if (!F.enCatalogo) F.noEncontrado = null; formProducto(null, catPreset(it)); return; }
+    case "catPdf": { const M = modal.M, base = CATALOGO.productos.filter(x => M.sel[x.c]).map(x => ({id:x.c, nombre:x.n, codigo:x.c, ref:x.r}));
+      t.disabled = true; try { await generarEtiquetas({formato:M.formato, salto:String(Math.max(0, Math.floor(num(M.salto)) - 1)), sel:M.sel}, base); } finally { t.disabled = false; } return; }
     case "etTodos": { const M = modal.M; for (const p of etLista(M)) if (p.codigo) M.sel[p.id] = M.sel[p.id] || 1; pintarModal(); return; }
     case "etNinguno": modal.M.sel = {}; pintarModal(); return;
     case "etStock": { const M = modal.M; for (const p of etLista(M)) if (p.codigo) { const n = ["m²","m","kg"].includes(p.unidad) ? 1 : Math.max(0, Math.ceil(stockDe(p.id))); if (n) M.sel[p.id] = n; else delete M.sel[p.id]; } pintarModal(); return; }
@@ -1445,6 +1503,7 @@ document.addEventListener("input", e => {
   const t = e.target, d = t.dataset;
   if (d.etq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.etq] = n; else delete modal.M.sel[d.etq]; const c = document.querySelector(`[data-etsel="${d.etq}"]`); if (c) c.checked = !!n; etResumen(); return; }
   if (d.etm !== undefined && modal && modal.M) { modal.M[d.etm] = t.value; etResumen(); return; }
+  if (d.catq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.catq] = n; else delete modal.M.sel[d.catq]; catResumen(); return; }
   if (d.f !== undefined) { F[d.f] = t.value; if (d.f === "cantidad" || d.f === "contado") actualizarPrevisto(); return; }
   if (d.ui !== undefined && t.tagName === "INPUT") { UI[d.ui] = t.value; pintar(); return; }
   if (d.m !== undefined && modal && modal.M && t.type !== "checkbox") { modal.M[d.m] = t.value; if (d.rerender !== undefined && t.tagName === "INPUT") pintarModal(); return; }
