@@ -228,6 +228,8 @@ nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;p
   table.tc td.tc-accion{text-align:right}
   table.tc td.tc-accion .btn{width:100%}
   table.tc td.tc-accion:empty{display:none}
+  table.tc td.tc-fila{grid-column:1/-1}
+  table.tc td.tc-fila .btn{width:auto}
 }
 @media (max-width:760px){
   body{padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));font-size:15px}
@@ -730,7 +732,7 @@ VISTAS.stock = () => {
     </div>
     <div class="cat">${lista.length} productos · ${fN(uds)} unidades · valor a coste <b>${fE(valor)}</b></div>
     ${lista.length ? `<div class="tableWrap"><table class="tc">
-      <thead><tr><th>Producto</th><th>Código</th><th>Origen</th><th class="n">Stock</th><th class="n">Mín.</th><th class="n">En camino</th><th class="n">Reservado</th><th class="n">Valor</th></tr></thead>
+      <thead><tr><th>Producto</th><th>Código</th><th>Origen</th><th class="n">Stock</th><th class="n">Mín.</th><th class="n">En camino</th><th class="n">Reservado</th><th class="n">Valor</th><th></th></tr></thead>
       <tbody>${lista.map(p => { const st = stockDe(p.id); return `<tr style="cursor:pointer" data-a="verProd" data-id="${p.id}">
         <td class="tc-main"><div style="font-weight:600">${h(p.nombre)}</div><div class="cat">${h(catNombre(p))}${p.ubicacion ? " · " + h(p.ubicacion) : ""}</div></td>
         <td class="mono tc-oculto">${h(p.codigo||"—")}</td><td class="cat tc-oculto">${p.origen==="china"?"China":h(p.proveedor||"Nacional")}</td>
@@ -738,7 +740,8 @@ VISTAS.stock = () => {
         <td class="n cat" data-l="Mín.">${p.stockMin!==""&&p.stockMin!==undefined?fN(p.stockMin):"—"}</td>
         <td class="n" data-l="En camino">${C.pendienteRecibir.get(p.id) ? fN(C.pendienteRecibir.get(p.id)) : "—"}</td>
         <td class="n" data-l="Reservado">${C.reservado.get(p.id) ? fN(C.reservado.get(p.id)) : "—"}</td>
-        <td class="n tc-oculto">${fE(Math.max(0,st)*num(p.coste))}</td></tr>`; }).join("")}</tbody></table></div>`
+        <td class="n tc-oculto">${fE(Math.max(0,st)*num(p.coste))}</td>
+        <td class="n tc-accion tc-fila"><button class="btn small danger" data-a="borrarFila" data-id="${p.id}" aria-label="Eliminar ${h(p.nombre)}">${UI.confBorrar===p.id ? "Confirmar: eliminar" : "Eliminar"}</button></td></tr>`; }).join("")}</tbody></table></div>`
       : `<div class="empty">${prods.length ? "Ningún producto coincide con los filtros." : "Aún no hay productos. Pulsa «+ Producto» o escanea un código para darlo de alta."}</div>`}
   </section>`;
 };
@@ -1436,6 +1439,10 @@ document.addEventListener("click", async e => {
     case "buscar": buscar($("#busca")?.value); return;
     case "elegir": seleccionarProducto(id); return;
     case "verProd": verProducto(id); return;
+    case "borrarFila":
+      if (UI.confBorrar !== id) { UI.confBorrar = id; pintar(); clearTimeout(UI.tBorrar); UI.tBorrar = setTimeout(() => { if (UI.confBorrar === id) { UI.confBorrar = null; pintar(); } }, 5000); return; }
+      UI.confBorrar = null;
+      try { await borrar("productos", id); toast("Producto eliminado. Su historial de movimientos se conserva."); if (F.pid===id) Object.assign(F, nuevoF()); pintar(); } catch(x) { errorGuardar(x); } return;
     case "nuevoProd": formProducto(null, t.dataset.codigo ? {codigo:t.dataset.codigo} : null); return;
     case "editarProd": formProducto(id); return;
     case "guardarProd": case "guardarPed": t.disabled = true; await modal.guardar(); t.disabled = false; return;
