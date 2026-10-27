@@ -266,6 +266,11 @@ nav.tabs .badge{position:absolute;top:2px;right:2px;min-width:17px;height:17px;p
 }
 .catf{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;padding:10px 2px;border-top:1px solid var(--line);align-items:start}
 .catf:first-child{border-top:0}
+.recf{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:8px 2px;border-top:1px solid var(--line);align-items:center}
+.recf:first-child{border-top:0}
+.recf b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recf input{width:76px;text-align:right}
+.recf.hecho{background:color-mix(in srgb, var(--ok, #1a7f37) 8%, transparent)}
 .catpag{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0}
 .catpag .btn{min-width:40px}
 .catpag .cat{margin:0 6px}
@@ -730,7 +735,7 @@ VISTAS.stock = () => {
   const cnt = id => prods.filter(p => p.categoria === id).length;
   return `${avisoEjemplos()}${cargando()}
   <section class="panel stack">
-    <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="catalogo">Catálogo web</button><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
+    <div class="head"><h2>Stock en nave</h2><div class="row"><button class="btn" data-a="recuento">Recuento</button><button class="btn" data-a="catalogo">Catálogo web</button><button class="btn" data-a="etiquetas">Imprimir etiquetas</button><button class="btn" data-a="csvStock">Exportar CSV</button><button class="btn primary" data-a="nuevoProd">+ Producto</button></div></div>
     <div class="chips desliza" role="group" aria-label="Categoría">
       <button class="chip" aria-pressed="${!UI.cat}" data-a="cat" data-c="">Todas<span class="n">${prods.length}</span></button>
       ${CATS.map(c => `<button class="chip" aria-pressed="${UI.cat===c.id}" data-a="cat" data-c="${c.id}">${c.nombre}<span class="n">${cnt(c.id)}</span></button>`).join("")}
@@ -1247,6 +1252,101 @@ function formCatalogo(q0){
   });
 }
 
+/* ---------- Recuento: todo el catálogo en lista, solo se escriben cantidades ---------- */
+// Lo contado se guarda en este dispositivo hasta pulsar «Guardar»; entonces se dan de alta los productos
+// nuevos (con su stock inicial), se ajusta el stock de los que ya estaban y se imprime una etiqueta por unidad nueva.
+const REC_KEY = LS_KEY + ":recuento", REC_POR_PAG = 50;
+function recLeer(){ try { return JSON.parse(localStorage.getItem(REC_KEY) || "{}") || {}; } catch(e) { return {}; } }
+function recPersistir(n){ try { localStorage.setItem(REC_KEY, JSON.stringify(n)); } catch(e) {} }
+function recIndice(){
+  const cod = new Map(), ref = new Map();
+  for (const p of S.productos.values()) { if (p.codigo) cod.set(p.codigo, p); if (p.ref) ref.set(p.ref.toLowerCase(), p); }
+  return x => cod.get(x.c) || (x.r && ref.get(x.r.toLowerCase())) || null;
+}
+const recContados = M => Object.entries(M.n).filter(([,v]) => String(v).trim() !== "");
+function recResumen(){
+  const el = document.getElementById("recRes"); if (!el || !modal || !modal.M) return;
+  const c = recContados(modal.M), uds = c.reduce((s,[,v]) => s + Math.max(0, Math.floor(num(v))), 0);
+  el.textContent = c.length ? `${fN(c.length)} contado${c.length===1?"":"s"} · ${fN(uds)} ud` : "Nada contado todavía";
+  const b = document.querySelector('[data-a="recGuardar"]'); if (b) b.disabled = !c.length;
+}
+function formRecuento(){
+  const M = {recuento:true, q:"", cat:"", ver:"", n:recLeer(), pag:0, filtro:"", formato:"rollo50x30", salto:"1", imprimir:true};
+  if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
+  abrirModal({M, form:true,
+    titulo:() => "Recuento",
+    sub:() => "Escribe las unidades que hay en la nave. Enter pasa al siguiente. Lo contado se guarda en este dispositivo hasta que pulses «Guardar».",
+    cuerpo:() => {
+      if (!CATALOGO) return `<div class="empty">Cargando catálogo…</div>`;
+      const enApp = recIndice(), q = M.q.trim().toLowerCase();
+      const res = CATALOGO.productos.filter(x => {
+        if (M.cat && x.cat !== M.cat) return false;
+        if (q && ![x.n, x.r, x.c].some(v => v && v.toLowerCase().includes(q))) return false;
+        const hecho = String(M.n[x.c] ?? "").trim() !== "";
+        return M.ver === "contados" ? hecho : M.ver === "pendientes" ? !hecho && !enApp(x) : true;
+      });
+      const clave = q + "|" + M.cat + "|" + M.ver;
+      if (M.filtro !== clave) { M.filtro = clave; M.pag = 0; }
+      const paginas = Math.max(1, Math.ceil(res.length / REC_POR_PAG));
+      M.pag = Math.min(Math.max(0, M.pag), paginas - 1);
+      const ver = res.slice(M.pag * REC_POR_PAG, (M.pag + 1) * REC_POR_PAG);
+      const nav = paginas > 1 ? `<div class="catpag"><button class="btn small" data-a="recPag" data-p="${M.pag-1}" ${M.pag?"":"disabled"} aria-label="Página anterior">‹ <span class="solo-escritorio">Anterior</span></button><span class="cat">Página ${M.pag+1} de ${paginas}</span><button class="btn small" data-a="recPag" data-p="${M.pag+1}" ${M.pag<paginas-1?"":"disabled"} aria-label="Página siguiente"><span class="solo-escritorio">Siguiente</span> ›</button></div>` : "";
+      return `<input id="recQ" type="search" data-m="q" data-rerender value="${h(M.q)}" placeholder="Nombre, referencia o código" aria-label="Buscar en el recuento">
+      <div class="chips desliza">${[["","Todas"]].concat(CATS.map(c => [c.id, c.nombre])).map(([k,t]) => `<button class="chip" aria-pressed="${M.cat===k}" data-a="recCat" data-c="${k}">${t}</button>`).join("")}</div>
+      <div class="seg">${[["","Todos"],["pendientes","Sin contar"],["contados","Contados"]].map(([k,t]) => `<button class="neutral" aria-pressed="${M.ver===k}" data-a="recVer" data-v2="${k}">${t}</button>`).join("")}</div>
+      <div class="cat">${fN(res.length)} producto${res.length===1?"":"s"}${paginas > 1 ? " · del " + fN(M.pag*REC_POR_PAG+1) + " al " + fN(M.pag*REC_POR_PAG+ver.length) : ""}</div>
+      ${nav}${ver.length ? `<div class="list">${ver.map(x => { const p = enApp(x), v = M.n[x.c] ?? ""; return `<div class="recf ${String(v).trim()!==""?"hecho":""}">
+        <div style="min-width:0"><b title="${h(x.n)}">${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span>${p ? ` · <span class="pill ok">En Stock: ${fN(stockDe(p.id))}</span>` : ""}</div></div>
+        <input type="number" min="0" inputmode="numeric" data-recn="${h(x.c)}" value="${h(v)}" placeholder="${p ? fN(stockDe(p.id)) : "–"}" aria-label="Unidades de ${h(x.n)}"></div>`; }).join("")}</div>${nav}` : `<div class="empty">Ningún producto coincide.</div>`}
+      <div class="fields" style="margin-top:12px">
+        <label class="cat" style="display:flex;align-items:center;gap:8px"><input type="checkbox" data-a="recImp" ${M.imprimir?"checked":""}> Imprimir una etiqueta por unidad de los productos nuevos</label>
+        <div><label class="lbl" for="recForm">Tamaño de etiqueta</label><select id="recForm" data-m="formato">${Object.entries(FORMATOS).map(([k,f]) => `<option value="${k}" ${M.formato===k?"selected":""}>${f.nombre}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="recSalto">Empezar en la etiqueta nº</label><input id="recSalto" type="number" min="1" inputmode="numeric" data-m="salto" value="${h(M.salto)}"></div>
+      </div>`;
+    },
+    pie:() => `<span id="recRes" class="muted" style="margin-right:auto;align-self:center"></span><button class="btn ghost" data-a="recBorrar">Vaciar</button><button class="btn primary" data-a="recGuardar">Guardar recuento</button>`,
+    montar:() => recResumen()
+  });
+}
+function recSumar(codigo){
+  const M = modal.M, it = catBuscar(codigo);
+  if (!it) { toast("Código no encontrado en el catálogo: " + codigo, true); return; }
+  M.n[it.c] = String(Math.max(0, Math.floor(num(M.n[it.c]))) + 1); recPersistir(M.n);
+  M.q = it.c; pintarModal(); toast(`${it.n}: ${M.n[it.c]} ud`);
+}
+async function recGuardar(btn){
+  const M = modal.M, enApp = recIndice(), nuevos = [], ajustes = [];
+  for (const [c, v] of recContados(M)) {
+    const it = catBuscar(c); if (!it) continue;
+    const n = Math.max(0, Math.floor(num(v))), p = enApp(it);
+    if (p) { const d = n - stockDe(p.id); if (d) ajustes.push({p, d, n}); }
+    else if (n) nuevos.push({it, n});
+  }
+  if (!nuevos.length && !ajustes.length) { toast("No hay cambios: lo contado coincide con el stock."); M.n = {}; recPersistir(M.n); pintarModal(); return; }
+  if (!confirm(`Se darán de alta ${nuevos.length} producto(s) nuevo(s) y se ajustará el stock de ${ajustes.length} que ya estaban. ¿Seguir?`)) return;
+  btn.disabled = true;
+  const fecha = new Date().toISOString(), mov = (pid, cantidad, nota, precio) => ({fecha, tipo:"ajuste", motivo:"inventario", productoId:pid, cantidad, precio, docTipo:"", docNum:"", pedidoProveedorId:"", pedidoClienteId:"", nota, autor:miId||""});
+  try {
+    for (const {it, n} of nuevos) {
+      const pid = nuevoId();
+      await guardar("productos", pid, {...catPreset(it), origen:"proveedor", proveedor:provCat(it.r), unidad:"ud", stockMin:"", coste:"", pvp:"", ubicacion:""});
+      await guardar("movimientos", nuevoId(), mov(pid, n, "Stock inicial (recuento)", 0));
+      delete M.n[it.c]; recPersistir(M.n);
+    }
+    for (const {p, d} of ajustes) await guardar("movimientos", nuevoId(), mov(p.id, d, "Recuento", num(p.coste)));
+    M.n = {}; recPersistir(M.n);
+    toast(`Recuento guardado: ${nuevos.length} alta(s), ${ajustes.length} ajuste(s)`);
+    if (M.imprimir && nuevos.length) {
+      // generarEtiquetas admite hasta 2000 etiquetas por PDF: se reparte en varios si hace falta
+      let lote = [], sel = {}, tot = 0;
+      const imprimir = async () => { if (lote.length) await generarEtiquetas({formato:M.formato, salto:String(Math.max(0, Math.floor(num(M.salto)) - 1)), sel}, lote); lote = []; sel = {}; tot = 0; };
+      for (const {it, n} of nuevos) { if (tot + n > 2000) await imprimir(); lote.push({id:it.c, nombre:it.n, codigo:it.c, ref:it.r}); sel[it.c] = Math.min(n, 2000); tot += Math.min(n, 2000); }
+      await imprimir();
+    }
+  } catch(e) { errorGuardar(e); recPersistir(M.n); }
+  finally { btn.disabled = false; pintarModal(); }
+}
+
 /* ============ Modales ============ */
 function abrirModal(m){ modal = m; pintarModal(); setTimeout(()=>{ const f = document.querySelector("#modal [autofocus]"); if (f) f.focus(); }, 30); }
 function cerrarModal(){ modal = null; $("#modal").innerHTML = ""; }
@@ -1549,6 +1649,7 @@ async function alEscanearFoto(input){
   usarCodigo(codigo, destino);
 }
 function usarCodigo(codigo, destino){
+  if (modal && modal.M && modal.M.recuento) { recSumar(codigo); return; }
   if (destino === "prod" && modal && modal.M) { modal.M.codigo = codigo; pintarModal(); toast("Código leído: " + codigo); return; }
   if (modal && !modal.form) cerrarModal();
   vista = "escanear"; buscar(codigo);
@@ -1577,6 +1678,8 @@ document.addEventListener("keydown", e => {
   if (enCampo) {
     if (e.key === "Enter" && tg.id === "busca") { e.preventDefault(); buscar(tg.value); }
     if (e.key === "Enter" && tg.id === "pCodigo") e.preventDefault();
+    if (e.key === "Enter" && tg.dataset.recn !== undefined) { e.preventDefault(); const l = [...document.querySelectorAll("[data-recn]")], s = l[l.indexOf(tg) + 1]; if (s) { s.focus(); s.select(); } else tg.blur(); }
+    if (e.key === "Enter" && tg.id === "recQ" && modal && modal.M && modal.M.recuento && /^\d{6,}$/.test(tg.value.trim()) && catBuscar(tg.value.trim())) { e.preventDefault(); recSumar(tg.value.trim()); }
     return;
   }
   if (e.key === "Escape" && modal) { pararVivo(); cerrarModal(); return; }
@@ -1688,6 +1791,13 @@ document.addEventListener("click", async e => {
     case "tipoMov": UI.tipoMov = t.dataset.t; pintar(); return;
     case "etiquetas": formEtiquetas(); return;
     case "catalogo": formCatalogo(); return;
+    case "recuento": formRecuento(); return;
+    case "recCat": modal.M.cat = t.dataset.c; pintarModal(); return;
+    case "recVer": modal.M.ver = t.dataset.v2; pintarModal(); return;
+    case "recPag": { modal.M.pag = Number(t.dataset.p); pintarModal(); const bd = document.querySelector("#modal .bd"); if (bd) bd.scrollTop = 0; return; }
+    case "recImp": modal.M.imprimir = t.checked; return;
+    case "recBorrar": if (confirm("¿Vaciar todo lo contado sin guardar?")) { modal.M.n = {}; recPersistir(modal.M.n); pintarModal(); } return;
+    case "recGuardar": await recGuardar(t); return;
     case "etCatWeb": formCatalogo(modal.M.q.trim()); return;
     case "catCat": modal.M.cat = t.dataset.c; pintarModal(); return;
     case "catPag": { modal.M.pag = Number(t.dataset.p); pintarModal(); const bd = document.querySelector("#modal .bd"); if (bd) bd.scrollTop = 0; return; }
@@ -1743,6 +1853,7 @@ document.addEventListener("input", e => {
   if (d.etq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.etq] = n; else delete modal.M.sel[d.etq]; const c = document.querySelector(`[data-etsel="${d.etq}"]`); if (c) c.checked = !!n; etResumen(); return; }
   if (d.etm !== undefined && modal && modal.M) { modal.M[d.etm] = t.value; etResumen(); return; }
   if (d.catn !== undefined && modal && modal.M) { modal.M.n[d.catn] = t.value; return; }
+  if (d.recn !== undefined && modal && modal.M) { if (t.value.trim() === "") delete modal.M.n[d.recn]; else modal.M.n[d.recn] = t.value; recPersistir(modal.M.n); t.closest(".recf")?.classList.toggle("hecho", t.value.trim() !== ""); recResumen(); return; }
   if (d.catq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.catq] = n; else delete modal.M.sel[d.catq]; catResumen(); return; }
   if (d.f !== undefined) { F[d.f] = t.value; if (d.f === "cantidad" || d.f === "contado") actualizarPrevisto(); return; }
   if (d.ui !== undefined && t.tagName === "INPUT") { UI[d.ui] = t.value; pintar(); return; }
