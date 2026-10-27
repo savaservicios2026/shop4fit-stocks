@@ -3,9 +3,9 @@
 // Variables del Worker (Settings → Variables, las tres como «Secret»):
 //   VERIFY_TOKEN       texto inventado que se pone también en Meta al configurar el webhook
 //   APP_SECRET         «Clave secreta de la app» de Meta (para comprobar que los avisos vienen de Meta)
-//   IMPORTADOR_CLAVE   contraseña del usuario importador@shop4fit-stocks.firebaseapp.com en Firebase
-const API_KEY = "AIzaSyCIGPzKqHb-1YwRr792-F6_Q8JjBwk8glI", PROYECTO = "shop4fit-stocks";
-const IMPORTADOR = "importador@shop4fit-stocks.firebaseapp.com";
+//   IMPORTADOR_CLAVE   contraseña del usuario importador@rutech-61f25.firebaseapp.com en Firebase
+const API_KEY = "AIzaSyBuBlY62FvQhA3aJ-JDJgxVexgs1Kay4Uo", PROYECTO = "rutech-61f25";
+const IMPORTADOR = "importador@rutech-61f25.firebaseapp.com";
 const RAIZ = `projects/${PROYECTO}/databases/(default)/documents`, BASE = "https://firestore.googleapis.com/v1/" + RAIZ;
 const TIPOS = {image:"Foto", video:"Vídeo", audio:"Nota de voz", document:"Documento", sticker:"Sticker", location:"Ubicación", contacts:"Contacto"};
 

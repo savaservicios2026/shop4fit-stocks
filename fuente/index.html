@@ -400,8 +400,9 @@ async function iniciar(){
     pintar();
   }
 }
-/* Versión alojada (Shop4Fit Stocks en GitHub Pages): Firebase Auth + Firestore con un único acceso de oficina */
+/* Versión alojada (Shop4Fit Stocks en GitHub Pages): Firebase Auth + Firestore del proyecto de Rutech, con sus usuarios de oficina */
 let fbSubs = [];
+const EMBEBIDA = window.self !== window.top; // abierta como sección «Stock» de Rutech
 function iniciarFirebase(){
   firebase.initializeApp(window.FIREBASE_CONFIG);
   const auth = firebase.auth(), fs = firebase.firestore();
@@ -418,10 +419,16 @@ function iniciarFirebase(){
     b.disabled = false;
   });
   salir.addEventListener("click", () => auth.signOut());
-  auth.onAuthStateChanged(u => {
+  auth.onAuthStateChanged(async u => {
     fbSubs.forEach(f => f()); fbSubs = [];
     if (!u) { COLS.forEach(c => { S[c] = new Map(); cargado[c] = false; }); login.hidden = false; salir.hidden = true; pintar(); setTimeout(() => $("#loginEmail")?.focus(), 50); return; }
-    login.hidden = true; salir.hidden = false; miId = u.email || u.uid;
+    // El acceso es el de Rutech: solo los usuarios con rol de oficina (roles/{email}) ven el stock
+    let rol = null;
+    try { rol = (await fs.collection("roles").doc((u.email || "").toLowerCase()).get()).data()?.role; } catch(e) {}
+    if (auth.currentUser !== u) return;
+    if (rol !== "oficina") { login.hidden = false; salir.hidden = true; $("#loginErr").textContent = "El usuario " + (u.email || "") + " no tiene acceso de oficina en Rutech."; pintar(); return; }
+    // Dentro de Rutech la sesión es la de Rutech: se sale desde allí
+    login.hidden = true; salir.hidden = EMBEBIDA; miId = u.email || u.uid;
     for (const col of COLS) fbSubs.push(fs.collection(col).onSnapshot(snap => {
       const m = new Map(); snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
       S[col] = m; cargado[col] = true; pintar();

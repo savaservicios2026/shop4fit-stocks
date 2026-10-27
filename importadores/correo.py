@@ -4,7 +4,7 @@
 Cada remitente es una solicitud; sus correos se van añadiendo como mensajes. Solo entran los que parecen
 una petición (presupuesto, oferta, precio…) y no vienen de un remitente marcado en la app como «ignorar».
 Se ejecuta cada 10 minutos desde GitHub Actions (.github/workflows/importar-correo.yml) con secretos:
-  IMPORTADOR_CLAVE                          contraseña del usuario importador@shop4fit-stocks.firebaseapp.com
+  IMPORTADOR_CLAVE                          contraseña del usuario importador@rutech-61f25.firebaseapp.com
   Microsoft 365 (Outlook):  M365_TENANT, M365_CLIENTE, M365_SECRETO, M365_BUZON
   Otros buzones por IMAP:   IMAP_SERVIDOR, IMAP_USUARIO, IMAP_CLAVE (en Gmail, «contraseña de aplicación»),
                             IMAP_CARPETA opcional (INBOX por defecto)

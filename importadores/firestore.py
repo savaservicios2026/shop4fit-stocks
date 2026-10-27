@@ -2,7 +2,7 @@
 import json, re, urllib.parse, urllib.request, urllib.error, pathlib
 
 CONFIG = pathlib.Path(__file__).resolve().parent.parent / "firebase-config.js"
-IMPORTADOR = "importador@shop4fit-stocks.firebaseapp.com"
+IMPORTADOR = "importador@rutech-61f25.firebaseapp.com"
 
 
 def _config():

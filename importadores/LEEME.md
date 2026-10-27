@@ -6,9 +6,11 @@ Todo funciona con el plan gratuito de Firebase (Spark): no hacen falta Cloud Fun
 
 ## 0. Una vez: usuario importador y reglas
 
-1. Firebase → **Authentication** → *Usuarios* → *Añadir usuario*: correo `importador@shop4fit-stocks.firebaseapp.com` y una contraseña larga. Esa contraseña es `IMPORTADOR_CLAVE`.
-2. Firebase → **Firestore Database** → *Reglas*: pega el contenido de [`firestore.rules`](../firestore.rules) y pulsa *Publicar*.
-   El importador solo puede crear solicitudes y añadirles mensajes; no ve el stock ni puede borrar nada.
+Los datos están en el proyecto de Firebase de Rutech (`rutech-61f25`).
+
+1. Firebase (proyecto `rutech-61f25`) → **Authentication** → *Usuarios* → *Añadir usuario*: correo `importador@rutech-61f25.firebaseapp.com` y una contraseña larga. Esa contraseña es `IMPORTADOR_CLAVE`. No le des rol en Rutech.
+2. Las reglas de Firestore están en el repositorio de Rutech (`firestore.rules`, bloque «Shop4Fit Stocks»).
+   El importador solo puede crear solicitudes y añadirles mensajes; no ve el stock ni los datos de Rutech, y no puede borrar nada.
 
 ## 1. Correo de empresa (cada 10 minutos, GitHub Actions)
 
