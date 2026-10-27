@@ -27,6 +27,8 @@ def _valor(v):
         return {"booleanValue": v}
     if isinstance(v, int):
         return {"integerValue": str(v)}
+    if isinstance(v, float):
+        return {"doubleValue": v}
     if isinstance(v, (list, tuple)):
         return {"arrayValue": {"values": [_valor(x) for x in v]}}
     if isinstance(v, dict):
@@ -69,6 +71,16 @@ class Firestore:
         st, r = _pedir("PATCH", self.base + "/" + ruta, {"fields": {k: _valor(v) for k, v in datos.items()}}, self.token)
         if st != 200:
             raise RuntimeError("Firestore %s: %s" % (st, r))
+
+    def crear(self, coleccion, doc_id, datos):
+        """Crea el documento solo si no existe. Devuelve False si ya existía (o las reglas no dejan tocarlo)."""
+        st, r = _pedir("POST", "%s/%s?documentId=%s" % (self.base, coleccion, urllib.parse.quote(doc_id, safe="")),
+                       {"fields": {k: _valor(v) for k, v in datos.items()}}, self.token)
+        if st == 200:
+            return True
+        if st in (403, 409):
+            return False
+        raise RuntimeError("Firestore %s: %s" % (st, r))
 
     def anadir_a_solicitud(self, doc_id, nueva, mensaje):
         """Crea la solicitud si no existe; si ya existe, solo le añade el mensaje y la marca como no leída."""

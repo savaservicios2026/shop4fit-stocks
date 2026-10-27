@@ -795,8 +795,11 @@ function pendientesProv(){
   return m;
 }
 /* Reparte cada línea entre lo que hay libre en la nave y lo que falta. `extra` acumula lo reservado en esta misma tanda. */
+// Las líneas que llegan de Teamleader traen la referencia (código del producto): se buscan en Stock por ella
+const porRef = ref => { const r = String(ref||"").trim().toLowerCase(); return r ? [...S.productos.values()].find(p => String(p.ref||"").trim().toLowerCase() === r || String(p.codigo||"").trim().toLowerCase() === r) : null; };
 function analizarLineas(x, extra){
-  return (x.lineas||[]).map(l => {
+  return (x.lineas||[]).map(l0 => {
+    const l = !l0.productoId && l0.ref && porRef(l0.ref) ? {...l0, productoId: porRef(l0.ref).id} : l0;
     const q = num(l.cantidad), pid = l.productoId;
     const libre = pid ? Math.max(0, stockDe(pid) - (C.reservado.get(pid)||0) - (extra.get(pid)||0)) : 0;
     const enNave = Math.min(q, libre);
