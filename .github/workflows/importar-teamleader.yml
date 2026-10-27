@@ -1,0 +1,38 @@
+name: Importar presupuestos aceptados de Teamleader
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      codigo:
+        description: "Solo la primera vez: el código que muestra la página de Teamleader después de autorizar"
+        required: false
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: importar-teamleader
+  cancel-in-progress: false
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Leer Teamleader y crear pedidos en Nuevo
+        env:
+          IMPORTADOR_CLAVE: ${{ secrets.IMPORTADOR_CLAVE }}
+          TL_CLIENTE_ID: ${{ secrets.TL_CLIENTE_ID }}
+          TL_CLIENTE_SECRETO: ${{ secrets.TL_CLIENTE_SECRETO }}
+          TL_CODIGO: ${{ github.event.inputs.codigo }}
+        run: python3 importadores/teamleader.py
+      # GitHub desactiva las tareas programadas tras 60 días sin actividad en el repositorio; esto las mantiene vivas.
+      - name: Mantener activa la tarea programada
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable importar-teamleader.yml --repo "$GITHUB_REPOSITORY" || true

@@ -54,3 +54,15 @@ GitHub → *Actions* → *Importar correos a Solicitudes* → **Run workflow**. 
 3. Meta for Developers → tu app → *WhatsApp* → *Configuración* → *Webhook*: URL del Worker y el mismo `VERIFY_TOKEN`; suscribe el campo `messages`.
 
 Recibir mensajes de clientes en la API es gratis. Con la *coexistencia* de Meta el número sigue funcionando a la vez en la app WhatsApp Business del móvil (hay que abrir esa app al menos una vez cada 13 días).
+
+## 3. Teamleader: presupuestos aceptados → Pedidos › Nuevo
+
+`teamleader.py` mira cada 10 minutos los deals ganados en Teamleader y, de cada uno, los presupuestos aceptados. Cada presupuesto entra una sola vez en **Pedidos › Nuevo** con sus líneas (referencia = código del producto en Teamleader, cantidad, precio y proveedor principal del producto). La app lo cruza con Stock por la referencia y lo reparte sola entre Stock y Proveedores.
+
+1. Teamleader (como administrador) → [Marketplace › Build](https://marketplace.focus.teamleader.eu/build) → crear una integración privada, por ejemplo `Shop4Fit Stocks`.
+   - *Redirect URI*: `https://savaservicios2026.github.io/shop4fit-stocks/teamleader.html`
+   - Permisos (*scopes*): deals, quotations, products, companies, contacts.
+2. Copia el **Client ID** y el **Client secret** a los secretos de GitHub `TL_CLIENTE_ID` y `TL_CLIENTE_SECRETO` (además de `IMPORTADOR_CLAVE`).
+3. Abre esta dirección cambiando `CLIENT_ID` y acepta:
+   `https://focus.teamleader.eu/oauth2/authorize?client_id=CLIENT_ID&response_type=code&redirect_uri=https://savaservicios2026.github.io/shop4fit-stocks/teamleader.html`
+4. La página que se abre te da un código: GitHub → *Actions* → *Importar presupuestos aceptados de Teamleader* → **Run workflow** → pega el código. A partir de ahí funciona solo.
