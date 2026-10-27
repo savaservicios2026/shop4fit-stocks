@@ -394,7 +394,7 @@ const esEAN13 = c => /^\d{13}$/.test(c) && eanCheck(c.slice(0,12)) === +c[12];
 /* ============ Almacenamiento: nube (db) o este dispositivo ============ */
 async function iniciar(){
   pintar();
-  cargarCatalogo();
+  cargarCatalogo(); cargarProvCatalogo();
   if (window.FIREBASE_CONFIG && window.firebase) return iniciarFirebase();
   const c = window.claude;
   if (c && typeof c.use === "function") {
@@ -797,7 +797,20 @@ VISTAS.pedidos = () => {
 };
 const SIN_PROV = "Sin proveedor";
 const slug = s => String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
-const provDe = l => S.productos.get(l.productoId)?.proveedor?.trim() || l.proveedor || SIN_PROV;
+/* Proveedor según los catálogos de cada proveedor (proveedores-catalogo.json): referencia → proveedor */
+const PROV_CAT = {ref:new Map(), mail:new Map()};
+function cargarProvCatalogo(){
+  return fetch("proveedores-catalogo.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : null).then(j => {
+    for (const p of (j && j.proveedores) || []) {
+      if (p.email) PROV_CAT.mail.set(slug(p.nombre), p.email);
+      for (const refs of Object.values(p.catalogos || {})) for (const r of refs) PROV_CAT.ref.set(String(r).trim().toLowerCase(), p.nombre);
+    }
+    pintar();
+  }).catch(() => {});
+}
+const provCat = ref => PROV_CAT.ref.get(String(ref||"").trim().toLowerCase()) || "";
+const mailProv = n => S.proveedores.get(slug(n))?.email || PROV_CAT.mail.get(slug(n)) || "";
+const provDe = l => S.productos.get(l.productoId)?.proveedor?.trim() || provCat(lineaRef(l)) || l.proveedor || SIN_PROV;
 const lineaNombre = l => l.productoId && S.productos.get(l.productoId) ? S.productos.get(l.productoId).nombre : (l.nombre || l.ref || "Producto");
 const lineaRef = l => (l.productoId && S.productos.get(l.productoId)?.ref) || l.ref || "";
 /* Líneas que faltan en la nave y aún no se han pedido, por proveedor */
@@ -846,12 +859,12 @@ function filaNuevo(x){
   </div>`;
 }
 function tarjetaProv(n, g){
-  const ficha = S.proveedores.get(slug(n));
+  const mail = mailProv(n);
   const porProd = new Map();
   for (const l of g.lineas) { const k = l.productoId || "ref:" + (l.ref || l.nombre); const a = porProd.get(k) || {ref:l.ref, nombre:l.nombre, cantidad:0, clientes:new Set()}; a.cantidad += num(l.falta); a.clientes.add(l.cliente||"Cliente"); porProd.set(k, a); }
   const sin = n === SIN_PROV;
   return `<div class="panel stack" style="box-shadow:none">
-    <div class="head"><div><h3 style="margin:0">${h(n)}</h3><div class="cat">${sin ? "Asigna el proveedor en la ficha de cada producto (Stock → producto → Editar)." : ficha?.email ? h(ficha.email) : "Sin correo"} ${sin ? "" : `<button class="btn small ghost" data-a="fichaProv" data-prov="${h(n)}">${ficha?.email ? "Cambiar correo" : "Añadir correo"}</button>`}</div></div>
+    <div class="head"><div><h3 style="margin:0">${h(n)}</h3><div class="cat">${sin ? "Asigna el proveedor en la ficha de cada producto (Stock → producto → Editar) o añade su referencia al catálogo del proveedor." : mail ? h(mail) : "Sin correo"} ${sin ? "" : `<button class="btn small ghost" data-a="fichaProv" data-prov="${h(n)}">${mail ? "Cambiar correo" : "Añadir correo"}</button>`}</div></div>
       ${sin ? "" : `<button class="btn primary" data-a="pedirProv" data-prov="${h(n)}">Generar pedido y correo</button>`}</div>
     <div class="tableWrap"><table class="tc"><thead><tr><th>Referencia</th><th>Producto</th><th class="n">Cantidad</th><th>Para</th></tr></thead><tbody>
       ${[...porProd.values()].map(a => `<tr><td class="mono" data-l="Ref.">${h(a.ref||"—")}</td><td class="tc-main">${h(a.nombre)}</td><td class="n" data-l="Cantidad"><b>${fN(a.cantidad)}</b></td><td class="cat" data-l="Para">${[...a.clientes].map(h).join(", ")}</td></tr>`).join("")}
@@ -901,17 +914,17 @@ function correoProveedor(pid){
     titulo:() => "Pedido " + h(S.pedidosProveedor.get(pid)?.numero || "") + " para " + h(S.pedidosProveedor.get(pid)?.proveedor || ""),
     sub:() => "El pedido ya está creado en «Pedidos a proveedor». Envía el correo desde tu programa de correo.",
     cuerpo:() => { const p = S.pedidosProveedor.get(pid); if (!p) return `<div class="empty">Creando el pedido…</div>`;
-      const {asunto, cuerpo} = textoCorreo(p), mail = S.proveedores.get(slug(p.proveedor))?.email || "";
+      const {asunto, cuerpo} = textoCorreo(p), mail = mailProv(p.proveedor);
       return `<div class="fields"><div class="full"><span class="lbl">Para</span>${mail ? h(mail) : `<span class="lowc">Sin correo: añádelo en la tarjeta del proveedor o escríbelo en tu correo.</span>`}</div>
         <div class="full"><span class="lbl">Asunto</span>${h(asunto)}</div>
         <div class="full"><span class="lbl">Mensaje</span><textarea readonly rows="12" style="width:100%">${h(cuerpo)}</textarea></div></div>`; },
-    pie:() => { const p = S.pedidosProveedor.get(pid); if (!p) return ""; const {asunto, cuerpo} = textoCorreo(p), mail = S.proveedores.get(slug(p.proveedor))?.email || "";
+    pie:() => { const p = S.pedidosProveedor.get(pid); if (!p) return ""; const {asunto, cuerpo} = textoCorreo(p), mail = mailProv(p.proveedor);
       return `<button class="btn" data-a="copiarCorreo" data-id="${pid}">Copiar texto</button><span style="flex:1"></span><a class="btn primary" target="_top" href="mailto:${encodeURIComponent(mail).replace("%40", "@")}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}">Abrir en el correo</a>`; }
   });
 }
 function fichaProveedor(n){
   const f = S.proveedores.get(slug(n)) || {};
-  const M = {email:f.email||"", contacto:f.contacto||""};
+  const M = {email:f.email||PROV_CAT.mail.get(slug(n))||"", contacto:f.contacto||""};
   abrirModal({M, form:true,
     titulo:() => h(n),
     sub:() => "Correo al que se envían los pedidos de este proveedor",
@@ -1266,7 +1279,7 @@ function verProducto(id){
       </div>
       <div class="grid2" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
         <div class="stack" style="gap:6px">
-          ${[["Referencia",p.ref],["Origen",ORIGEN[p.origen]],["Proveedor",p.proveedor],["Ubicación",p.ubicacion],["Coste",p.coste!==""&&p.coste!==undefined?fE2(num(p.coste)):""],["PVP",p.pvp!==""&&p.pvp!==undefined?fE2(num(p.pvp)):""]].filter(r => r[1]).map(([k,v]) => `<div class="row" style="justify-content:space-between"><span class="cat">${k}</span><span>${h(v)}</span></div>`).join("")}
+          ${[["Referencia",p.ref],["Origen",ORIGEN[p.origen]],["Proveedor",p.proveedor||provCat(p.ref)],["Ubicación",p.ubicacion],["Coste",p.coste!==""&&p.coste!==undefined?fE2(num(p.coste)):""],["PVP",p.pvp!==""&&p.pvp!==undefined?fE2(num(p.pvp)):""]].filter(r => r[1]).map(([k,v]) => `<div class="row" style="justify-content:space-between"><span class="cat">${k}</span><span>${h(v)}</span></div>`).join("")}
         </div>
         ${p.codigo ? `<div class="stack" style="gap:6px"><div class="label"><svg id="bc"></svg><div class="ln">${h(p.nombre)}</div></div><button class="btn small" data-a="etiqueta" data-id="${id}">Descargar etiqueta</button></div>` : `<div class="empty">Sin código de barras. Edita el producto para añadir uno o generar un código interno.</div>`}
       </div>
@@ -1290,7 +1303,7 @@ function formProducto(id, preset){
       <div><label class="lbl" for="pCat">Categoría</label><select id="pCat" data-m="categoria" data-rerender>${CATS.map(c => `<option value="${c.id}" ${M.categoria===c.id?"selected":""}>${c.nombre}</option>`).join("")}</select></div>
       ${subs.length ? `<div><label class="lbl" for="pSub">Tipo</label><select id="pSub" data-m="sub"><option value="">—</option>${subs.map(s => `<option ${M.sub===s?"selected":""}>${s}</option>`).join("")}</select></div>` : ""}
       <div><label class="lbl" for="pOrigen">Origen</label><select id="pOrigen" data-m="origen">${Object.entries(ORIGEN).map(([k,t]) => `<option value="${k}" ${M.origen===k?"selected":""}>${t}</option>`).join("")}</select></div>
-      <div><label class="lbl" for="pProv">Proveedor / fábrica</label><input id="pProv" type="text" list="dlProv" data-m="proveedor" value="${h(M.proveedor)}"><datalist id="dlProv">${proveedores.map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
+      <div><label class="lbl" for="pProv">Proveedor / fábrica</label><input id="pProv" type="text" list="dlProv" data-m="proveedor" value="${h(M.proveedor)}" placeholder="${h(provCat(M.ref))}"><datalist id="dlProv">${proveedores.map(x => `<option value="${h(x)}">`).join("")}</datalist></div>
       <div><label class="lbl" for="pUd">Unidad</label><select id="pUd" data-m="unidad">${UNIDADES.map(x => `<option ${M.unidad===x?"selected":""}>${x}</option>`).join("")}</select></div>
       <div><label class="lbl" for="pMin">Stock mínimo</label><input id="pMin" type="number" inputmode="decimal" data-m="stockMin" value="${h(M.stockMin)}"></div>
       <div><label class="lbl" for="pCoste">Coste unitario (€)</label><input id="pCoste" type="number" step="0.01" inputmode="decimal" data-m="coste" value="${h(M.coste)}"></div>
@@ -1306,6 +1319,7 @@ function formProducto(id, preset){
       const pid = id || nuevoId();
       const {stockInicial, ...datos} = M;
       datos.nombre = datos.nombre.trim(); datos.codigo = cod;
+      if (!String(datos.proveedor||"").trim()) datos.proveedor = provCat(datos.ref);
       if (!(CAT[datos.categoria]?.subs||[]).includes(datos.sub)) datos.sub = "";
       for (const k of ["stockMin","coste","pvp"]) datos[k] = datos[k] === "" ? "" : num(datos[k]);
       try {

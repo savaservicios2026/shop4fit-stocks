@@ -17,3 +17,7 @@ Control de stock de la nave de Shop4Fit: entradas y salidas por código de barra
 | `fuente/index.html` | Código fuente de la app, el mismo que la versión de claude.ai |
 | `importadores/` | Entrada automática de correos y WhatsApp a *Solicitudes*; cómo activarla en [`importadores/LEEME.md`](importadores/LEEME.md) |
 | `.github/workflows/importar-correo.yml` | Tarea que lee el correo de empresa cada 10 minutos |
+
+## Proveedor por referencia (`proveedores-catalogo.json`)
+
+Lista las referencias de los catálogos y tarifas de cada proveedor, con su correo. Cuando un producto o una línea de pedido no tiene proveedor en su ficha, la app lo busca aquí por la referencia (Pedidos › Proveedores, ficha y alta de producto). Para añadir un catálogo, añade sus referencias dentro de `catalogos` del proveedor.
