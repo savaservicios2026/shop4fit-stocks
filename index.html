@@ -1214,7 +1214,7 @@ function catTotal(M){ return Object.values(M.sel).reduce((s,q) => s + q, 0); }
 function catResumen(){ const el = document.getElementById("catRes"); if (!el || !modal || !modal.M) return; const n = catTotal(modal.M); el.textContent = n ? n + " etiqueta" + (n>1?"s":"") : ""; const b = document.querySelector('[data-a="catPdf"]'); if (b) b.disabled = !n; }
 const CAT_POR_PAG = 10;
 function formCatalogo(q0){
-  const M = {q:q0||"", cat:"", sel:{}, formato:"rollo50x30", salto:"1", pag:0, filtro:""};
+  const M = {q:q0||"", cat:"", sel:{}, n:{}, formato:"rollo50x30", salto:"1", pag:0, filtro:""};
   if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
   abrirModal({M, form:true,
     titulo:() => "Catálogo de la web",
@@ -1239,7 +1239,7 @@ function formCatalogo(q0){
       ${nav}${ver.length ? `<div class="list">${ver.map(x => { const p = catEnApp(x); return `<div class="catf">
         ${x.f ? `<img src="${h(x.f)}" alt="" loading="lazy">` : `<span class="sinfoto"></span>`}
         <div style="min-width:0"><b>${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span></div>
-          <div class="row" style="margin-top:6px">${p ? `<button class="pill ok" data-a="verProd" data-id="${p.id}">En Stock · ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</button>` : `<button class="btn small" data-a="altaCat" data-c="${h(x.c)}">Dar de alta</button>`}
+          <div class="row" style="margin-top:6px">${p ? `<button class="pill ok" data-a="verProd" data-id="${p.id}">En Stock · ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</button>` : `<label class="cat" style="display:flex;align-items:center;gap:6px">Hay <input type="number" min="0" inputmode="numeric" style="width:64px" data-catn="${h(x.c)}" value="${h(M.n[x.c]||"")}" placeholder="0"></label><button class="btn small primary" data-a="altaRapida" data-c="${h(x.c)}" title="Da de alta el producto con estas unidades e imprime una etiqueta por unidad">Dar de alta e imprimir</button><button class="btn small ghost" data-a="altaCat" data-c="${h(x.c)}" title="Abrir la ficha completa antes de dar de alta">Ficha</button>`}
           <label class="cat" style="display:flex;align-items:center;gap:6px">Etiquetas <input type="number" min="0" inputmode="numeric" style="width:70px" data-catq="${h(x.c)}" value="${M.sel[x.c]||""}" placeholder="0"></label></div></div></div>`; }).join("")}</div>${nav}` : `<div class="empty">Ningún producto coincide.</div>`}`;
     },
     pie:() => `<span id="catRes" class="muted" style="margin-right:auto;align-self:center"></span><a class="btn" href="catalogo/productos-shop4fit.csv" download>Descargar CSV</a><button class="btn primary" data-a="catPdf" ${catTotal(M)?"":"disabled"}>Etiquetas PDF</button>`,
@@ -1691,6 +1691,19 @@ document.addEventListener("click", async e => {
     case "etCatWeb": formCatalogo(modal.M.q.trim()); return;
     case "catCat": modal.M.cat = t.dataset.c; pintarModal(); return;
     case "catPag": { modal.M.pag = Number(t.dataset.p); pintarModal(); const bd = document.querySelector("#modal .bd"); if (bd) bd.scrollTop = 0; return; }
+    case "altaRapida": { // Alta desde el catálogo con las unidades contadas y una etiqueta por unidad
+      const M = modal.M, it = catBuscar(t.dataset.c); if (!it || catEnApp(it)) return;
+      const n = Math.max(0, Math.floor(num(M.n[it.c])));
+      const pid = nuevoId(), datos = {...catPreset(it), origen:"proveedor", proveedor:provCat(it.r), unidad:"ud", stockMin:"", coste:"", pvp:"", ubicacion:""};
+      t.disabled = true;
+      try {
+        await guardar("productos", pid, datos);
+        if (n) await guardar("movimientos", nuevoId(), {fecha:new Date().toISOString(), tipo:"ajuste", motivo:"inventario", productoId:pid, cantidad:n, precio:0, docTipo:"", docNum:"", pedidoProveedorId:"", pedidoClienteId:"", nota:"Stock inicial (catálogo web)", autor:miId||""});
+        toast(`${it.n} dado de alta${n ? " con " + n + " ud" : ""}`);
+        delete M.n[it.c];
+        if (n) await generarEtiquetas({formato:M.formato, salto:String(Math.max(0, Math.floor(num(M.salto)) - 1)), sel:{[it.c]:n}}, [{id:it.c, nombre:it.n, codigo:it.c, ref:it.r}]);
+      } catch(e) { errorGuardar(e); } finally { t.disabled = false; pintarModal(); }
+      return; }
     case "altaCat": { const it = catBuscar(t.dataset.c); if (!it) return; if (!F.enCatalogo) F.noEncontrado = null; formProducto(null, catPreset(it)); return; }
     case "catPdf": { const M = modal.M, base = CATALOGO.productos.filter(x => M.sel[x.c]).map(x => ({id:x.c, nombre:x.n, codigo:x.c, ref:x.r}));
       t.disabled = true; try { await generarEtiquetas({formato:M.formato, salto:String(Math.max(0, Math.floor(num(M.salto)) - 1)), sel:M.sel}, base); } finally { t.disabled = false; } return; }
@@ -1729,6 +1742,7 @@ document.addEventListener("input", e => {
   const t = e.target, d = t.dataset;
   if (d.etq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.etq] = n; else delete modal.M.sel[d.etq]; const c = document.querySelector(`[data-etsel="${d.etq}"]`); if (c) c.checked = !!n; etResumen(); return; }
   if (d.etm !== undefined && modal && modal.M) { modal.M[d.etm] = t.value; etResumen(); return; }
+  if (d.catn !== undefined && modal && modal.M) { modal.M.n[d.catn] = t.value; return; }
   if (d.catq !== undefined && modal && modal.M) { const n = Math.max(0, Math.floor(num(t.value))); if (n) modal.M.sel[d.catq] = n; else delete modal.M.sel[d.catq]; catResumen(); return; }
   if (d.f !== undefined) { F[d.f] = t.value; if (d.f === "cantidad" || d.f === "contado") actualizarPrevisto(); return; }
   if (d.ui !== undefined && t.tagName === "INPUT") { UI[d.ui] = t.value; pintar(); return; }
