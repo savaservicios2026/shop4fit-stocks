@@ -100,6 +100,7 @@ textarea{min-height:64px;resize:vertical}
 .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
 .seg button{flex:1;border:0;background:none;padding:10px 6px;cursor:pointer;font-weight:600;color:var(--muted)}
 .seg button+button{border-left:1px solid var(--line)}
+.linkish{border:0;background:none;padding:0;font:inherit;font-weight:600;color:inherit;cursor:pointer;text-align:left}.linkish:hover{text-decoration:underline}
 .seg button[aria-pressed="true"].entrada{background:var(--ok-bg);color:var(--ok)}
 .seg button[aria-pressed="true"].salida{background:var(--bad-bg);color:var(--bad)}
 .seg button[aria-pressed="true"].ajuste{background:var(--warn-bg);color:var(--warn)}
@@ -316,21 +317,21 @@ const MOTIVOS = {
 const MOTIVO_TXT = Object.fromEntries(Object.values(MOTIVOS).flat());
 const DOCS = [["albaran","Albarán"],["presupuesto","Presupuesto"],["factura","Factura"],["proforma","Proforma"]];
 const DOC_TXT = Object.fromEntries(DOCS);
-const COLS = ["productos","movimientos","pedidosProveedor","pedidosCliente","solicitudes"];
+const COLS = ["productos","movimientos","pedidosProveedor","pedidosCliente","solicitudes","proveedores"];
 const CANALES = {whatsapp:"WhatsApp", correo:"Correo", telefono:"Teléfono", web:"Web", visita:"En persona", otro:"Otro"};
 const ESTADOS_SOL = [["nueva","Nueva"],["curso","En curso"],["presupuestada","Presupuestada"],["aceptada","Aceptada"],["descartada","Descartada"]];
 const ESTADO_SOL_TXT = Object.fromEntries(ESTADOS_SOL);
 const LS_KEY = "control-stock-v1";
 
 /* ============ Estado ============ */
-const S = {productos:new Map(), movimientos:new Map(), pedidosProveedor:new Map(), pedidosCliente:new Map(), solicitudes:new Map()};
+const S = {productos:new Map(), movimientos:new Map(), pedidosProveedor:new Map(), pedidosCliente:new Map(), solicitudes:new Map(), proveedores:new Map()};
 const errCol = {};
 let modo = "cargando", db = null, userCap = null, dl = null, miId = null, cargado = {};
 let vista = "escanear";
 try { const v = localStorage.getItem(LS_KEY+":vista"); if (v) vista = v; } catch(e) {}
 let C = null; // cálculos derivados
 const F = nuevoF(); // formulario de movimiento
-const UI = {cat:"", origen:"", bajo:false, q:"", tipoPed:"proveedor", qPed:"", periodo:"12m", agrupar:"categoria", metrica:"imp", qMov:"", tipoMov:"", estSol:"atender", canalSol:"", qSol:""};
+const UI = {cat:"", origen:"", bajo:false, q:"", tipoPed:"nuevo", qPed:"", periodo:"12m", agrupar:"categoria", metrica:"imp", qMov:"", tipoMov:"", estSol:"atender", canalSol:"", qSol:""};
 let modal = null;
 const nombres = {};
 const enMarco = (()=>{ try { return window.self !== window.top; } catch(e) { return true; } })();
@@ -388,7 +389,7 @@ async function iniciar(){
         const m = new Map();
         snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
         S[col] = m; cargado[col] = true; pintar();
-      }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes") toast("No se pudo sincronizar ("+err.code+"). Recarga la página.", true); });
+      }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes" && col !== "proveedores") toast("No se pudo sincronizar ("+err.code+"). Recarga la página.", true); });
     }
   } else {
     modo = "local";
@@ -432,7 +433,7 @@ function iniciarFirebase(){
     for (const col of COLS) fbSubs.push(fs.collection(col).onSnapshot(snap => {
       const m = new Map(); snap.docs.forEach(d => m.set(d.id, {...d.data(), id:d.id}));
       S[col] = m; cargado[col] = true; pintar();
-    }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes") toast("No se pudo leer «" + col + "» (" + (err.code||"error") + ").", true); }));
+    }, err => { cargado[col] = true; errCol[col] = err.code || "error"; pintar(); if (col !== "solicitudes" && col !== "proveedores") toast("No se pudo leer «" + col + "» (" + (err.code||"error") + ").", true); }));
   });
 }
 function persistirLocal(){
@@ -493,7 +494,7 @@ function calcular(){
     for (const l of p.lineas||[]) {
       const q = num(l.cantidad), s = Math.max(0, servido.get(p.id+"|"+l.productoId)||0);
       tot += q; ser += Math.min(q, s);
-      if (!p.cancelado) reservado.set(l.productoId, (reservado.get(l.productoId)||0) + Math.max(0, q-s));
+      if (!p.cancelado && p.fase !== "nuevo") reservado.set(l.productoId, (reservado.get(l.productoId)||0) + Math.max(0, q-s));
     }
     estadoCli.set(p.id, {tot, ser, est: p.cancelado ? "Cancelado" : tot && ser>=tot ? "Servido" : ser>0 ? "Parcial" : "Pendiente"});
   }
@@ -513,6 +514,7 @@ function pintarYa(){
   const a = document.activeElement, aid = a && a.id; let s0=null, s1=null;
   try { s0 = a.selectionStart; s1 = a.selectionEnd; } catch(e) {}
   C = calcular();
+  autoAnalizar();
   const md = $("#modo");
   md.className = "modo " + (modo === "nube" ? "nube" : "");
   md.textContent = modo === "nube" ? "Sincronizado" : modo === "local" ? "Guardado en este dispositivo" : "Cargando…";
@@ -737,22 +739,166 @@ VISTAS.stock = () => {
 
 /* ---------- Pedidos ---------- */
 VISTAS.pedidos = () => {
-  const prov = UI.tipoPed === "proveedor";
-  const q = UI.qPed.trim().toLowerCase();
-  const col = prov ? S.pedidosProveedor : S.pedidosCliente;
-  const lista = [...col.values()].filter(x => !q || JSON.stringify([x.numero,x.proveedor,x.cliente,x.presupuesto,x.albaran,x.docRef]).toLowerCase().includes(q))
-    .sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+  const t = UI.tipoPed, q = UI.qPed.trim().toLowerCase();
+  const coincide = x => !q || JSON.stringify([x.numero,x.proveedor,x.cliente,x.presupuesto,x.albaran,x.docRef]).toLowerCase().includes(q);
+  const nuevos = [...S.pedidosCliente.values()].filter(esNuevo);
+  const pend = pendientesProv();
+  const nPend = [...pend.values()].reduce((s,g) => s + g.lineas.length, 0);
+  const TABS = [["nuevo", "Nuevo", nuevos.length], ["stock", "Stock"], ["proveedores", "Proveedores", nPend], ["enviados", "Enviados"]];
+  let cuerpo = "";
+  if (t === "nuevo") {
+    const lista = nuevos.filter(coincide).sort((a,b) => (a.fecha||"").localeCompare(b.fecha||""));
+    cuerpo = `<p class="cat" style="margin:0">Presupuestos aceptados en Teamleader. Al llegar se reparten solos: lo que hay en la nave pasa a <b>Stock</b> (reservado para el cliente) y lo que falta a <b>Proveedores</b>. Márcalos como revisados para quitarlos de aquí.</p>
+    ${lista.length > 1 ? `<div class="row"><button class="btn small" data-a="revisarTodos">Marcar todos como revisados (${lista.length})</button></div>` : ""}
+    ${lista.length ? `<div class="list">${lista.map(filaNuevo).join("")}</div>` : `<div class="empty">No hay presupuestos aceptados pendientes${q?" que coincidan":""}.</div>`}`;
+  } else if (t === "stock") {
+    const lista = [...S.pedidosCliente.values()].filter(x => x.fase !== "nuevo" && coincide(x))
+      .sort((a,b) => (C.estadoCli.get(a.id)?.est === "Servido") - (C.estadoCli.get(b.id)?.est === "Servido") || (b.fecha||"").localeCompare(a.fecha||""));
+    cuerpo = `<p class="cat" style="margin:0">Pedidos de cliente analizados: lo que está en la nave y queda reservado para cada uno. Ábrelos para ir marcando lo que sale.</p>
+    ${lista.length ? `<div class="list">${lista.map(filaPedCli).join("")}</div>` : `<div class="empty">No hay pedidos de cliente${q?" que coincidan":""}.</div>`}`;
+  } else if (t === "proveedores") {
+    const grupos = [...pend.entries()].filter(([n,g]) => !q || n.toLowerCase().includes(q) || g.lineas.some(l => JSON.stringify([l.ref,l.nombre]).toLowerCase().includes(q)))
+      .sort((a,b) => (a[0] === SIN_PROV) - (b[0] === SIN_PROV) || a[0].localeCompare(b[0]));
+    cuerpo = `<p class="cat" style="margin:0">Lo que falta en la nave, agrupado por el proveedor de cada producto. Genera el pedido y se abre el correo para enviárselo.</p>
+    ${grupos.length ? grupos.map(([n,g]) => tarjetaProv(n, g)).join("") : `<div class="empty">No falta nada por pedir${q?" que coincida":""}.</div>`}`;
+  } else {
+    const lista = [...S.pedidosProveedor.values()].filter(coincide).sort((a,b) => (b.fecha||"").localeCompare(a.fecha||""));
+    cuerpo = `${lista.length ? `<div class="list">${lista.map(filaPedProv).join("")}</div>` : `<div class="empty">No hay pedidos a proveedor${q?" que coincidan":""}.</div>`}`;
+  }
+  const boton = t === "nuevo" ? `<button class="btn primary" data-a="nuevoPed">+ Presupuesto aceptado</button>` : t === "enviados" ? `<button class="btn primary" data-a="nuevoPed">+ Pedido a proveedor</button>` : "";
   return `${avisoEjemplos()}${cargando()}
   <section class="panel stack">
-    <div class="head"><h2>Pedidos</h2><button class="btn primary" data-a="nuevoPed">+ ${prov ? "Pedido a proveedor" : "Pedido de cliente"}</button></div>
+    <div class="head"><h2>Pedidos</h2>${boton}</div>
     <div class="row">
-      <div class="seg" style="flex:0 1 420px"><button class="neutral" aria-pressed="${prov}" data-a="tipoPed" data-t="proveedor">De proveedores (entran)</button><button class="neutral" aria-pressed="${!prov}" data-a="tipoPed" data-t="cliente">De clientes (salen)</button></div>
-      <input class="grow" id="qPed" type="search" data-ui="qPed" value="${h(UI.qPed)}" placeholder="${prov ? "Proveedor, nº pedido o proforma" : "Cliente, presupuesto o albarán"}" aria-label="Buscar pedido">
+      <div class="seg" style="flex:1 1 520px">${TABS.map(([k,txt,n]) => `<button class="neutral" aria-pressed="${t===k}" data-a="tipoPed" data-t="${k}">${txt}${n ? ` <span class="badge">${n}</span>` : ""}</button>`).join("")}</div>
+      <input class="grow" id="qPed" type="search" data-ui="qPed" value="${h(UI.qPed)}" placeholder="Buscar cliente, proveedor, presupuesto o referencia" aria-label="Buscar pedido">
     </div>
-    <p class="cat" style="margin:0">${prov ? "Cada pedido a proveedor se vincula a los presupuestos o albaranes de cliente que cubre." : "Los pedidos de cliente se identifican por su presupuesto y su albarán; desde aquí ves qué pedidos a proveedor los abastecen."}</p>
-    ${lista.length ? `<div class="list">${lista.map(x => prov ? filaPedProv(x) : filaPedCli(x)).join("")}</div>` : `<div class="empty">No hay pedidos ${prov?"a proveedor":"de cliente"}${q?" que coincidan":""}. ${q?"":"Crea el primero con el botón de arriba."}</div>`}
+    ${cuerpo}
   </section>`;
 };
+const SIN_PROV = "Sin proveedor";
+const slug = s => String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "x";
+const provDe = l => S.productos.get(l.productoId)?.proveedor?.trim() || l.proveedor || SIN_PROV;
+const lineaNombre = l => l.productoId && S.productos.get(l.productoId) ? S.productos.get(l.productoId).nombre : (l.nombre || l.ref || "Producto");
+const lineaRef = l => (l.productoId && S.productos.get(l.productoId)?.ref) || l.ref || "";
+/* Líneas que faltan en la nave y aún no se han pedido, por proveedor */
+function pendientesProv(){
+  const m = new Map();
+  for (const x of S.pedidosCliente.values()) {
+    if (x.fase === "nuevo" || x.cancelado) continue;
+    (x.lineas||[]).forEach((l, i) => {
+      if (!(num(l.falta) > 0) || l.pedidoProveedorId) return;
+      const n = provDe(l); if (!m.has(n)) m.set(n, {lineas:[]});
+      m.get(n).lineas.push({...l, i, pedidoId:x.id, cliente:x.cliente, ref:lineaRef(l), nombre:lineaNombre(l)});
+    });
+  }
+  return m;
+}
+/* Reparte cada línea entre lo que hay libre en la nave y lo que falta. `extra` acumula lo reservado en esta misma tanda. */
+function analizarLineas(x, extra){
+  return (x.lineas||[]).map(l => {
+    const q = num(l.cantidad), pid = l.productoId;
+    const libre = pid ? Math.max(0, stockDe(pid) - (C.reservado.get(pid)||0) - (extra.get(pid)||0)) : 0;
+    const enNave = Math.min(q, libre);
+    if (pid) extra.set(pid, (extra.get(pid)||0) + enNave);
+    return {...l, enNave, falta: q - enNave};
+  });
+}
+const esNuevo = x => !x.cancelado && (x.fase === "nuevo" || (x.fase === "analizado" && x.revisado === false));
+/* Los presupuestos que llegan a Nuevo se reparten solos en cuanto la app tiene los datos cargados */
+let analizando = false;
+function autoAnalizar(){
+  if (analizando || !["productos","movimientos","pedidosCliente"].every(c => cargado[c])) return;
+  const ids = [...S.pedidosCliente.values()].filter(x => x.fase === "nuevo" && !x.cancelado).sort((a,b) => (a.fecha||"").localeCompare(b.fecha||"")).map(x => x.id);
+  if (!ids.length) return;
+  analizando = true;
+  setTimeout(() => analizarPedidos(ids).catch(errorGuardar).finally(() => { analizando = false; }), 0);
+}
+function filaNuevo(x){
+  const lineas = x.fase === "nuevo" ? analizarLineas(x, new Map()) : (x.lineas||[]);
+  return `<div class="item" style="cursor:default">
+    <span class="t"><button class="linkish" data-a="verPedCli" data-id="${x.id}">${h(x.cliente||"Cliente")}</button> ${x.teamleaderId ? `<span class="pill info">Teamleader</span>` : ""}</span>
+    <span class="r">${x.fase === "nuevo" ? `<span class="cat">Repartiendo…</span>` : `<button class="btn small" data-a="revisadoPed" data-id="${x.id}">Revisado</button>`}</span>
+    <span class="s">${[x.presupuesto && "Presup. <span class='mono'>"+h(x.presupuesto)+"</span>", fFecha(x.fecha)].filter(Boolean).join(" · ")}</span>
+    <span class="s" style="grid-column:1/-1">${lineas.map(l => `<span class="pill ${!l.productoId ? "bad" : l.falta ? (l.enNave ? "warn" : "info") : "ok"}" title="${h(lineaRef(l))}">${fN(l.cantidad)} × ${h(lineaNombre(l))}${!l.productoId ? " · no está en Stock" : l.falta ? (l.enNave ? ` · hay ${fN(l.enNave)}` : " · a proveedor") : " · en nave"}</span>`).join(" ")}</span>
+  </div>`;
+}
+function tarjetaProv(n, g){
+  const ficha = S.proveedores.get(slug(n));
+  const porProd = new Map();
+  for (const l of g.lineas) { const k = l.productoId || "ref:" + (l.ref || l.nombre); const a = porProd.get(k) || {ref:l.ref, nombre:l.nombre, cantidad:0, clientes:new Set()}; a.cantidad += num(l.falta); a.clientes.add(l.cliente||"Cliente"); porProd.set(k, a); }
+  const sin = n === SIN_PROV;
+  return `<div class="panel stack" style="box-shadow:none">
+    <div class="head"><div><h3 style="margin:0">${h(n)}</h3><div class="cat">${sin ? "Asigna el proveedor en la ficha de cada producto (Stock → producto → Editar)." : ficha?.email ? h(ficha.email) : "Sin correo"} ${sin ? "" : `<button class="btn small ghost" data-a="fichaProv" data-prov="${h(n)}">${ficha?.email ? "Cambiar correo" : "Añadir correo"}</button>`}</div></div>
+      ${sin ? "" : `<button class="btn primary" data-a="pedirProv" data-prov="${h(n)}">Generar pedido y correo</button>`}</div>
+    <div class="tableWrap"><table class="tc"><thead><tr><th>Referencia</th><th>Producto</th><th class="n">Cantidad</th><th>Para</th></tr></thead><tbody>
+      ${[...porProd.values()].map(a => `<tr><td class="mono" data-l="Ref.">${h(a.ref||"—")}</td><td class="tc-main">${h(a.nombre)}</td><td class="n" data-l="Cantidad"><b>${fN(a.cantidad)}</b></td><td class="cat" data-l="Para">${[...a.clientes].map(h).join(", ")}</td></tr>`).join("")}
+    </tbody></table></div>
+  </div>`;
+}
+async function analizarPedidos(ids){
+  C = calcular();
+  const extra = new Map();
+  for (const id of ids) {
+    const x = S.pedidosCliente.get(id); if (!x) continue;
+    await actualizar("pedidosCliente", id, {lineas: analizarLineas(x, extra), fase:"analizado", analizado:new Date().toISOString(), revisado:false});
+  }
+  toast(ids.length > 1 ? ids.length + " presupuestos nuevos repartidos entre Stock y Proveedores" : "Presupuesto nuevo repartido entre Stock y Proveedores");
+}
+function numeroPedidoProv(){
+  const y = new Date().getFullYear(), pre = "PP-" + y + "-";
+  const max = Math.max(0, ...[...S.pedidosProveedor.values()].map(p => (p.numero||"").startsWith(pre) ? +p.numero.slice(pre.length) || 0 : 0));
+  return pre + String(max + 1).padStart(3, "0");
+}
+async function pedirProveedor(n){
+  const g = pendientesProv().get(n); if (!g) return;
+  const numero = numeroPedidoProv(), pid = nuevoId();
+  const agg = new Map();
+  for (const l of g.lineas) { const k = l.productoId || "ref:" + (l.ref || l.nombre); const a = agg.get(k) || {productoId:l.productoId||"", ref:l.ref, nombre:l.nombre, cantidad:0}; a.cantidad += num(l.falta); agg.set(k, a); }
+  const items = [...agg.values()];
+  const prod0 = S.productos.get(items.find(a => a.productoId)?.productoId);
+  const clientes = [...new Set(g.lineas.map(l => l.pedidoId))];
+  await guardar("pedidosProveedor", pid, {proveedor:n, origen:prod0?.origen || "proveedor", numero, docRef:"", fecha:hoy(), fechaPrevista:"", clientes, nota:"Generado desde Pedidos → Proveedores", cancelado:false,
+    lineas: items.filter(a => a.productoId).map(a => ({productoId:a.productoId, cantidad:a.cantidad, coste:S.productos.get(a.productoId)?.coste ?? ""})),
+    sinFicha: items.filter(a => !a.productoId).map(a => ({ref:a.ref||"", nombre:a.nombre, cantidad:a.cantidad}))});
+  for (const oid of clientes) {
+    const x = S.pedidosCliente.get(oid); if (!x) continue;
+    const marcar = new Set(g.lineas.filter(l => l.pedidoId === oid).map(l => l.i));
+    await actualizar("pedidosCliente", oid, {lineas: (x.lineas||[]).map((l, i) => marcar.has(i) ? {...l, pedidoProveedorId:pid} : l)});
+  }
+  correoProveedor(pid);
+}
+function textoCorreo(p){
+  const lineas = (p.lineas||[]).map(l => ({ref:S.productos.get(l.productoId)?.ref || "", nombre:prodNombre(l.productoId), cantidad:l.cantidad, u:S.productos.get(l.productoId)?.unidad || "ud"}))
+    .concat((p.sinFicha||[]).map(l => ({...l, u:"ud"})));
+  return {asunto: "Pedido " + (p.numero||"") + " · Shop4Fit",
+    cuerpo: `Buenos días:\n\nOs hacemos el siguiente pedido (${p.numero||""}):\n\n${lineas.map(l => `- ${l.ref ? "Ref. " + l.ref + " · " : ""}${l.nombre} · ${fN(l.cantidad)} ${l.u}`).join("\n")}\n\nPor favor, confirmadnos disponibilidad, precio y plazo de entrega.\n\nUn saludo,\nShop4Fit`};
+}
+function correoProveedor(pid){
+  abrirModal({
+    titulo:() => "Pedido " + h(S.pedidosProveedor.get(pid)?.numero || "") + " para " + h(S.pedidosProveedor.get(pid)?.proveedor || ""),
+    sub:() => "El pedido ya está creado en «Pedidos a proveedor». Envía el correo desde tu programa de correo.",
+    cuerpo:() => { const p = S.pedidosProveedor.get(pid); if (!p) return `<div class="empty">Creando el pedido…</div>`;
+      const {asunto, cuerpo} = textoCorreo(p), mail = S.proveedores.get(slug(p.proveedor))?.email || "";
+      return `<div class="fields"><div class="full"><span class="lbl">Para</span>${mail ? h(mail) : `<span class="lowc">Sin correo: añádelo en la tarjeta del proveedor o escríbelo en tu correo.</span>`}</div>
+        <div class="full"><span class="lbl">Asunto</span>${h(asunto)}</div>
+        <div class="full"><span class="lbl">Mensaje</span><textarea readonly rows="12" style="width:100%">${h(cuerpo)}</textarea></div></div>`; },
+    pie:() => { const p = S.pedidosProveedor.get(pid); if (!p) return ""; const {asunto, cuerpo} = textoCorreo(p), mail = S.proveedores.get(slug(p.proveedor))?.email || "";
+      return `<button class="btn" data-a="copiarCorreo" data-id="${pid}">Copiar texto</button><span style="flex:1"></span><a class="btn primary" target="_top" href="mailto:${encodeURIComponent(mail).replace("%40", "@")}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}">Abrir en el correo</a>`; }
+  });
+}
+function fichaProveedor(n){
+  const f = S.proveedores.get(slug(n)) || {};
+  const M = {email:f.email||"", contacto:f.contacto||""};
+  abrirModal({M, form:true,
+    titulo:() => h(n),
+    sub:() => "Correo al que se envían los pedidos de este proveedor",
+    cuerpo:() => `<div class="fields"><div class="full"><label class="lbl" for="pvMail">Correo</label><input id="pvMail" type="email" data-m="email" value="${h(M.email)}" autofocus placeholder="pedidos@proveedor.com"></div>
+      <div class="full"><label class="lbl" for="pvCon">Persona de contacto</label><input id="pvCon" type="text" data-m="contacto" value="${h(M.contacto)}"></div></div>`,
+    pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" data-a="guardarPed">Guardar</button>`,
+    guardar: async () => { try { await guardar("proveedores", slug(n), {nombre:n, email:M.email.trim(), contacto:M.contacto.trim()}); toast("Proveedor guardado"); cerrarModal(); } catch(e) { errorGuardar(e); } }
+  });
+}
 function filaPedProv(x){
   const e = C.estadoProv.get(x.id) || {tot:0,rec:0,est:"Pendiente"};
   const vinc = (x.clientes||[]).map(id => S.pedidosCliente.get(id)).filter(Boolean);
@@ -765,8 +911,9 @@ function filaPedProv(x){
 function filaPedCli(x){
   const e = C.estadoCli.get(x.id) || {tot:0,ser:0,est:"Pendiente"};
   const prov = [...S.pedidosProveedor.values()].filter(p => (p.clientes||[]).includes(x.id));
+  const ls = x.lineas||[], reparto = x.fase && e.est !== "Servido" ? [["En nave", ls.reduce((s,l) => s + num(l.enNave), 0)], ["Pedido a proveedor", ls.filter(l => l.pedidoProveedorId).reduce((s,l) => s + num(l.falta), 0)], ["Falta pedir", ls.filter(l => !l.pedidoProveedorId).reduce((s,l) => s + num(l.falta), 0)]].filter(r => r[1]) : [];
   return `<button class="item" data-a="verPedCli" data-id="${x.id}">
-    <span class="t">${h(x.cliente||"Cliente")}</span>
+    <span class="t">${h(x.cliente||"Cliente")}${reparto.length ? ` <span class="cat">${reparto.map(([k,v]) => k + ": <b>" + fN(v) + "</b>").join(" · ")}</span>` : ""}</span>
     <span class="r">${pillEstado(e.est)}<div class="cat">${fN(e.ser)}/${fN(e.tot)}</div></span>
     <span class="s">${[x.presupuesto && "Presup. <span class='mono'>"+h(x.presupuesto)+"</span>", x.albaran && "Albarán <span class='mono'>"+h(x.albaran)+"</span>", fFecha(x.fecha)].filter(Boolean).join(" · ")}${prov.length ? " · " + prov.length + " pedido" + (prov.length>1?"s":"") + " a proveedor" : ""}</span>
   </button>`;
@@ -1168,7 +1315,7 @@ function verPedido(tipo, id){
       <div class="bar ok"><i style="width:${pct}%"></i></div>
       <div class="tableWrap"><table class="tc"><thead><tr><th>Producto</th><th class="n">Pedido</th><th class="n">${prov?"Recibido":"Servido"}</th><th class="n">Falta</th>${prov?"":`<th class="n">Stock</th>`}<th></th></tr></thead><tbody>
         ${(x.lineas||[]).map(l => { const hq = Math.max(0, hecho.get(id+"|"+l.productoId)||0), falta = Math.max(0, num(l.cantidad)-hq); const st = stockDe(l.productoId); return `<tr>
-          <td class="tc-main"><div style="font-weight:600">${h(prodNombre(l.productoId))}</div><div class="cat">${fE2(num(prov?l.coste:l.precio))} / ${h(S.productos.get(l.productoId)?.unidad||"ud")}</div></td>
+          <td class="tc-main"><div style="font-weight:600">${h(lineaNombre(l))}</div>${num(l.falta) > 0 ? `<div class="cat">${l.pedidoProveedorId ? "Pedido a proveedor " + h(S.pedidosProveedor.get(l.pedidoProveedorId)?.numero || "") : "Falta pedir " + fN(l.falta) + " al proveedor"}</div>` : ""}<div class="cat">${fE2(num(prov?l.coste:l.precio))} / ${h(S.productos.get(l.productoId)?.unidad||"ud")}</div></td>
           <td class="n" data-l="Pedido">${fN(l.cantidad)}</td><td class="n" data-l="${prov?"Recibido":"Servido"}">${fN(hq)}</td><td class="n" data-l="Falta"><b>${fN(falta)}</b></td>
           ${prov ? "" : `<td class="n ${st<falta?"lowc":""}" data-l="Stock">${fN(st)}</td>`}
           <td class="n tc-accion">${falta && !x.cancelado && S.productos.get(l.productoId) ? `<button class="btn small" data-a="movPedido" data-tipo="${prov?"entrada":"salida"}" data-ped="${id}" data-pid="${l.productoId}">${prov?"Recibir":"Servir"}</button>` : ""}</td></tr>`; }).join("")}
@@ -1231,6 +1378,12 @@ function formPedido(tipo, id, preset, alGuardar){
       const lineas = M.lineas.filter(l => l.productoId && num(l.cantidad) > 0).map(l => prov ? {productoId:l.productoId, cantidad:num(l.cantidad), coste:l.coste===""?"":num(l.coste)} : {productoId:l.productoId, cantidad:num(l.cantidad), precio:l.precio===""?"":num(l.precio)});
       if (!lineas.length) { toast("Añade al menos una línea con producto y cantidad", true); return; }
       const {qVinc, ...datos} = M; datos.lineas = lineas;
+      // Al editar un pedido de cliente ya analizado se conserva el reparto de las líneas que no cambian; si cambia alguna, vuelve a Nuevo
+      if (!prov && x0 && x0.fase) {
+        const viejas = [...(x0.lineas||[])];
+        datos.lineas = lineas.map(l => { const k = viejas.findIndex(v => v.productoId === l.productoId && num(v.cantidad) === l.cantidad); return k >= 0 ? {...viejas.splice(k, 1)[0], ...l} : l; });
+        if (datos.lineas.some(l => l.falta === undefined)) { datos.fase = "nuevo"; datos.lineas = datos.lineas.filter(l => !l.pedidoProveedorId).map(({enNave, falta, ...l}) => l).concat(datos.lineas.filter(l => l.pedidoProveedorId)); }
+      }
       const pid = id || nuevoId();
       try { await guardar(prov ? "pedidosProveedor" : "pedidosCliente", pid, datos); toast(id ? "Pedido actualizado" : "Pedido creado"); if (alGuardar) await alGuardar(pid); verPedido(tipo, pid); }
       catch(e) { errorGuardar(e); }
@@ -1453,7 +1606,12 @@ document.addEventListener("click", async e => {
     case "cat": UI.cat = t.dataset.c; pintar(); return;
     case "bajo": UI.bajo = !UI.bajo; pintar(); return;
     case "tipoPed": UI.tipoPed = t.dataset.t; pintar(); return;
-    case "nuevoPed": formPedido(UI.tipoPed); return;
+    case "nuevoPed": UI.tipoPed === "enviados" ? formPedido("proveedor") : formPedido("cliente", null, {fase:"nuevo"}); return;
+    case "revisadoPed": await actualizar("pedidosCliente", id, {revisado:true}); return;
+    case "revisarTodos": for (const x of [...S.pedidosCliente.values()].filter(x => esNuevo(x) && x.fase === "analizado")) await actualizar("pedidosCliente", x.id, {revisado:true}); return;
+    case "pedirProv": pedirProveedor(t.dataset.prov); return;
+    case "fichaProv": fichaProveedor(t.dataset.prov); return;
+    case "copiarCorreo": { const p = S.pedidosProveedor.get(id); if (!p) return; const {asunto, cuerpo} = textoCorreo(p); try { await navigator.clipboard.writeText(asunto + "\n\n" + cuerpo); toast("Texto copiado"); } catch(x) { toast("No se pudo copiar: selecciónalo a mano", true); } return; }
     case "verPedProv": verPedido("proveedor", id); return;
     case "verPedCli": verPedido("cliente", id); return;
     case "estSolF": UI.estSol = t.dataset.t; pintar(); return;
