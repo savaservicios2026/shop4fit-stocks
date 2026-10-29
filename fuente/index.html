@@ -1185,16 +1185,18 @@ VISTAS.movimientos = () => {
 };
 
 /* ---------- Catálogo de la web (catalogo.json, generado desde la exportación de la tienda) ---------- */
-// Los productos de shop4fit.online con su código de barras fijo. No se guardan en la base de datos:
+// Los productos de shop4fit.online con su código de barras fijo, más las tarifas de proveedor
+// (catalogo-proveedores.json, p. ej. DHZ de Fitness Deluxe). No se guardan en la base de datos:
 // un producto pasa a Stock solo cuando se da de alta (al entrar en la nave).
 let CATALOGO = null, catPromesa = null;
 function cargarCatalogo(){
-  if (!catPromesa) catPromesa = fetch("catalogo.json", {cache:"no-cache"}).then(r => r.ok ? r.json() : null)
-    .then(j => (CATALOGO = j && j.productos ? j : {productos:[]})).catch(() => (CATALOGO = {productos:[]}));
+  const leer = url => fetch(url, {cache:"no-cache"}).then(r => r.ok ? r.json() : null).catch(() => null);
+  if (!catPromesa) catPromesa = Promise.all([leer("catalogo.json"), leer("catalogo-proveedores.json")])
+    .then(([web, prov]) => (CATALOGO = {generado:web?.generado, web:(web?.productos||[]).length, productos:(web?.productos||[]).concat(prov?.productos||[])}));
   return catPromesa;
 }
 const catEnApp = it => [...S.productos.values()].find(p => (p.codigo && p.codigo === it.c) || (it.r && p.ref && p.ref.toLowerCase() === it.r.toLowerCase()));
-const catPreset = it => ({nombre:it.n, codigo:it.c, ref:it.r||"", categoria:it.cat||"funcional", sub:it.sub||"", foto:it.f||"", webId:it.i});
+const catPreset = it => ({nombre:it.n, codigo:it.c, ref:it.r||"", categoria:it.cat||"funcional", sub:it.sub||"", foto:it.f||"", ...(it.i ? {webId:it.i} : {})});
 const catBuscar = codigo => CATALOGO && CATALOGO.productos.find(x => x.c === codigo || (x.r && x.r.toLowerCase() === String(codigo).toLowerCase()));
 function catTotal(M){ return Object.values(M.sel).reduce((s,q) => s + q, 0); }
 function catResumen(){ const el = document.getElementById("catRes"); if (!el || !modal || !modal.M) return; const n = catTotal(modal.M); el.textContent = n ? n + " etiqueta" + (n>1?"s":"") : ""; const b = document.querySelector('[data-a="catPdf"]'); if (b) b.disabled = !n; }
@@ -1204,7 +1206,7 @@ function formCatalogo(q0){
   if (!CATALOGO) cargarCatalogo().then(() => modal && modal.M === M && pintarModal());
   abrirModal({M, form:true,
     titulo:() => "Catálogo de la web",
-    sub:() => CATALOGO ? `${fN(CATALOGO.productos.length)} productos de shop4fit.online${CATALOGO.generado ? " · actualizado " + fFecha(CATALOGO.generado) : ""}` : "Cargando…",
+    sub:() => CATALOGO ? `${fN(CATALOGO.web)} productos de shop4fit.online${CATALOGO.productos.length > CATALOGO.web ? " y " + fN(CATALOGO.productos.length - CATALOGO.web) + " de tarifas de proveedor (DHZ)" : ""}${CATALOGO.generado ? " · actualizado " + fFecha(CATALOGO.generado) : ""}` : "Cargando…",
     cuerpo:() => {
       if (!CATALOGO) return `<div class="empty">Cargando catálogo…</div>`;
       if (!CATALOGO.productos.length) return `<div class="empty">El catálogo de la web todavía no está cargado.</div>`;
@@ -1224,7 +1226,7 @@ function formCatalogo(q0){
       <div class="cat">${fN(res.length)} producto${res.length===1?"":"s"}${paginas > 1 ? " · del " + fN(M.pag*CAT_POR_PAG+1) + " al " + fN(M.pag*CAT_POR_PAG+ver.length) : ""}</div>
       ${nav}${ver.length ? `<div class="list">${ver.map(x => { const p = catEnApp(x); return `<div class="catf">
         ${x.f ? `<img src="${h(x.f)}" alt="" loading="lazy">` : `<span class="sinfoto"></span>`}
-        <div style="min-width:0"><b>${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span></div>
+        <div style="min-width:0"><b>${h(x.n)}</b><div class="cat">${x.r ? h(x.r) + " · " : ""}<span class="mono">${h(x.c)}</span>${x.tarifa ? ` · ${h(x.w)} · ${fE2(x.t)}` : ""}</div>
           <div class="row" style="margin-top:6px">${p ? `<button class="pill ok" data-a="verProd" data-id="${p.id}">En Stock · ${fN(stockDe(p.id))} ${h(p.unidad||"ud")}</button>` : `<label class="cat" style="display:flex;align-items:center;gap:6px">Hay <input type="number" min="0" inputmode="numeric" style="width:64px" data-catn="${h(x.c)}" value="${h(M.n[x.c]||"")}" placeholder="0"></label><button class="btn small primary" data-a="altaRapida" data-c="${h(x.c)}" title="Da de alta el producto con estas unidades e imprime una etiqueta por unidad">Dar de alta e imprimir</button><button class="btn small ghost" data-a="altaCat" data-c="${h(x.c)}" title="Abrir la ficha completa antes de dar de alta">Ficha</button>`}
           <label class="cat" style="display:flex;align-items:center;gap:6px">Etiquetas <input type="number" min="0" inputmode="numeric" style="width:70px" data-catq="${h(x.c)}" value="${M.sel[x.c]||""}" placeholder="0"></label></div></div></div>`; }).join("")}</div>${nav}` : `<div class="empty">Ningún producto coincide.</div>`}`;
     },

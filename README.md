@@ -18,6 +18,15 @@ Control de stock de la nave de Shop4Fit: entradas y salidas por código de barra
 | `importadores/` | Entrada automática de correos y WhatsApp a *Solicitudes*; cómo activarla en [`importadores/LEEME.md`](importadores/LEEME.md) |
 | `.github/workflows/importar-correo.yml` | Tarea que lee el correo de empresa cada 10 minutos |
 
+## Tarifas de proveedor en el catálogo (`catalogo-proveedores.json`)
+
+Máquinas de tarifas de proveedor que no están en la web (de momento, la **Tarifa DHZ 2026** de Fitness Deluxe, 235 referencias). La app las junta con `catalogo.json`, así que salen en *Catálogo web* y en *Recuento*: se buscan por nombre o referencia, se cuentan, se imprime su etiqueta y pasan a Stock al darlas de alta (con proveedor Fitness Deluxe). Cada una lleva un código interno fijo que empieza por «22». Para regenerarla con una tarifa nueva:
+
+```
+pdftotext -layout "TARIFA DHZ 2026.pdf" dhz.txt
+python3 catalogo/tarifa-dhz.py dhz.txt
+```
+
 ## Proveedor por referencia (`proveedores-catalogo.json`)
 
 Lista las referencias de los catálogos y tarifas de cada proveedor, con su correo. Cuando un producto o una línea de pedido no tiene proveedor en su ficha, la app lo busca aquí por la referencia (Pedidos › Proveedores, ficha y alta de producto). Para añadir un catálogo, añade sus referencias dentro de `catalogos` del proveedor.
