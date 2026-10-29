@@ -1393,11 +1393,14 @@ function verProducto(id){
 function formProducto(id, preset){
   const p0 = id ? S.productos.get(id) : null;
   const M = Object.assign({nombre:"", codigo:"", ref:"", categoria:"musculacion", sub:"", origen:"china", proveedor:"", unidad:"ud", stockMin:"", coste:"", pvp:"", ubicacion:"", stockInicial:""}, p0 ? JSON.parse(JSON.stringify(p0)) : {}, preset||{});
+  const stock0 = id ? stockDe(id) : 0;
+  if (id) M.stockInicial = String(stock0);
   const proveedores = [...new Set([...S.productos.values()].map(p => p.proveedor).concat([...S.pedidosProveedor.values()].map(p => p.proveedor)).filter(Boolean))].sort();
   abrirModal({M, form:true,
     titulo:() => id ? "Editar producto" : "Nuevo producto",
     cuerpo:() => { const subs = CAT[M.categoria]?.subs || []; return `<div class="fields">
       <div class="full"><label class="lbl" for="pNombre">Nombre *</label><input id="pNombre" type="text" data-m="nombre" value="${h(M.nombre)}" autofocus placeholder="Prensa de piernas 45°"></div>
+      <div><label class="lbl" for="pIni">${id ? "Unidades en stock" : "Stock inicial"}</label><input id="pIni" type="number" inputmode="decimal" data-m="stockInicial" value="${h(M.stockInicial)}" placeholder="0">${id ? `<div class="cat">Si lo cambias se guarda un ajuste de inventario.</div>` : ""}</div>
       <div class="full"><label class="lbl" for="pCodigo">Código de barras</label><div class="row"><input class="grow mono" id="pCodigo" type="text" inputmode="numeric" data-m="codigo" value="${h(M.codigo)}" placeholder="Escanea el del fabricante o genera uno interno">
         <label class="btn" for="fotoProd">Escanear</label><input class="vh" id="fotoProd" type="file" accept="image/*" capture="environment" data-scan="prod"><button class="btn" data-a="genCodigo">Generar interno</button></div></div>
       <div><label class="lbl" for="pRef">Referencia</label><input id="pRef" type="text" data-m="ref" value="${h(M.ref)}" placeholder="Ref. fabricante"></div>
@@ -1410,7 +1413,6 @@ function formProducto(id, preset){
       <div><label class="lbl" for="pCoste">Coste unitario (€)</label><input id="pCoste" type="number" step="0.01" inputmode="decimal" data-m="coste" value="${h(M.coste)}"></div>
       <div><label class="lbl" for="pPvp">PVP (€)</label><input id="pPvp" type="number" step="0.01" inputmode="decimal" data-m="pvp" value="${h(M.pvp)}"></div>
       <div><label class="lbl" for="pUbi">Ubicación en nave</label><input id="pUbi" type="text" data-m="ubicacion" value="${h(M.ubicacion)}" placeholder="Pasillo B · Estante 3"></div>
-      ${!id ? `<div><label class="lbl" for="pIni">Stock inicial</label><input id="pIni" type="number" inputmode="decimal" data-m="stockInicial" value="${h(M.stockInicial)}" placeholder="0"></div>` : ""}
     </div>`; },
     pie:() => `<button class="btn" data-a="cerrar">Cancelar</button><button class="btn primary" data-a="guardarProd">${id ? "Guardar cambios" : "Dar de alta"}</button>`,
     guardar: async () => {
@@ -1419,12 +1421,15 @@ function formProducto(id, preset){
       if (cod && [...S.productos.values()].some(p => p.codigo === cod && p.id !== id)) { toast("Ese código ya está asignado a otro producto", true); return; }
       const pid = id || nuevoId();
       const {stockInicial, ...datos} = M;
+      if (id && String(stockInicial).trim() !== "" && (!isFinite(num(stockInicial)) || num(stockInicial) < 0)) { toast("Las unidades en stock no pueden ser negativas", true); return; }
+      const ajuste = id && String(stockInicial).trim() !== "" && num(stockInicial) !== stock0 ? num(stockInicial) - stockDe(pid) : 0;
       datos.nombre = datos.nombre.trim(); datos.codigo = cod;
       if (!String(datos.proveedor||"").trim()) datos.proveedor = provCat(datos.ref);
       if (!(CAT[datos.categoria]?.subs||[]).includes(datos.sub)) datos.sub = "";
       for (const k of ["stockMin","coste","pvp"]) datos[k] = datos[k] === "" ? "" : num(datos[k]);
       try {
         await guardar("productos", pid, datos);
+        if (ajuste) await guardar("movimientos", nuevoId(), {fecha:new Date().toISOString(), tipo:"ajuste", motivo:"inventario", productoId:pid, cantidad:ajuste, precio:num(datos.coste), docTipo:"", docNum:"", pedidoProveedorId:"", pedidoClienteId:"", nota:"Ajuste desde Editar producto", autor:miId||""});
         if (!id && num(stockInicial)) await guardar("movimientos", nuevoId(), {fecha:new Date().toISOString(), tipo:"ajuste", motivo:"inventario", productoId:pid, cantidad:num(stockInicial), precio:num(datos.coste), docTipo:"", docNum:"", pedidoProveedorId:"", pedidoClienteId:"", nota:"Stock inicial", autor:miId||""});
         toast(id ? "Producto actualizado" : "Producto dado de alta");
         if (!id && F.noEncontrado) { seleccionarProducto(pid); return; }
